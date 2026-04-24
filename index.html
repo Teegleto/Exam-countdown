@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Exam Countdown Tracker</title>
+<style>
+  :root {
+    --bg: #f4f7fb;
+    --surface: #ffffff;
+    --surface-alt: #eef2f8;
+    --text: #2b3a55;
+    --text-soft: #5b6b85;
+    --muted: #8a96ad;
+    --primary: #6b8afd;
+    --primary-dark: #4a6ae0;
+    --accent: #8fd3b6;
+    --warn-bg: #fff4e4;
+    --warn-border: #f0b37e;
+    --warn-text: #8a4a12;
+    --done-bg: #eceff4;
+    --done-text: #9aa3b2;
+    --danger: #e07a7a;
+    --shadow: 0 4px 20px rgba(47, 64, 100, 0.08);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    margin: 0.4rem 0 0;
+    color: var(--text-soft);
+    font-size: 0.95rem;
+  }
+
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 1rem 3rem;
+  }
+
+  .add-form {
+    background: var(--surface);
+    padding: 1.25rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 2rem;
+  }
+
+  .add-form label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8rem;
+    color: var(--text-soft);
+    font-weight: 500;
+    gap: 0.35rem;
+  }
+
+  .add-form input {
+    padding: 0.65rem 0.8rem;
+    border: 1px solid #dbe1ec;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--surface);
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .add-form input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(107, 138, 253, 0.15);
+  }
+
+  .add-form button {
+    padding: 0.7rem 1.25rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+    font-family: inherit;
+    height: fit-content;
+  }
+
+  .add-form button:hover { background: var(--primary-dark); }
+  .add-form button:active { transform: translateY(1px); }
+
+  .exams {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 2px dashed #dbe1ec;
+  }
+
+  .exam-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 1px solid transparent;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .exam-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(47, 64, 100, 0.12);
+  }
+
+  .exam-card.urgent {
+    background: var(--warn-bg);
+    border-color: var(--warn-border);
+  }
+
+  .exam-card.urgent .exam-date,
+  .exam-card.urgent .subject {
+    color: var(--warn-text);
+  }
+
+  .exam-card.done {
+    background: var(--done-bg);
+    color: var(--done-text);
+    box-shadow: none;
+  }
+
+  .exam-card.done .subject,
+  .exam-card.done .exam-date,
+  .exam-card.done .countdown,
+  .exam-card.done .quote {
+    color: var(--done-text);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .subject {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text);
+    word-break: break-word;
+  }
+
+  .delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .delete-btn:hover {
+    background: #fde8e8;
+    color: var(--danger);
+  }
+
+  .exam-date {
+    font-size: 0.85rem;
+    color: var(--text-soft);
+    margin-bottom: 1rem;
+  }
+
+  .countdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .time-unit {
+    background: var(--surface-alt);
+    border-radius: 10px;
+    padding: 0.55rem 0.25rem;
+    text-align: center;
+  }
+
+  .exam-card.urgent .time-unit {
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  .exam-card.done .time-unit {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .time-value {
+    display: block;
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .time-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-top: 0.15rem;
+  }
+
+  .done-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.55rem;
+    background: var(--done-text);
+    color: white;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .quote {
+    margin-top: auto;
+    font-size: 0.85rem;
+    color: var(--text-soft);
+    font-style: italic;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(47, 64, 100, 0.08);
+    line-height: 1.45;
+  }
+
+  @media (max-width: 640px) {
+    .add-form {
+      grid-template-columns: 1fr;
+    }
+    header { padding: 1.75rem 1rem 1rem; }
+    main { padding: 0 0.85rem 2rem; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Exam Countdown</h1>
+    <p>Stay calm. Stay prepared. Track every exam in one place.</p>
+  </header>
+
+  <main>
+    <form class="add-form" id="addForm" autocomplete="off">
+      <label>
+        Subject
+        <input type="text" id="subjectInput" placeholder="e.g. Mathematics" required maxlength="60" />
+      </label>
+      <label>
+        Date
+        <input type="date" id="dateInput" required />
+      </label>
+      <label>
+        Time (optional)
+        <input type="time" id="timeInput" />
+      </label>
+      <button type="submit">Add Exam</button>
+    </form>
+
+    <div class="exams" id="examsList"></div>
+  </main>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'exam-countdown-exams';
+
+  const QUOTES = [
+    "Success is the sum of small efforts repeated day in and day out.",
+    "The expert in anything was once a beginner.",
+    "Don't watch the clock; do what it does. Keep going.",
+    "You don't have to be great to start, but you have to start to be great.",
+    "Push yourself, because no one else is going to do it for you.",
+    "Small steps every day lead to big results.",
+    "Study hard, but remember: progress, not perfection.",
+    "Believe you can and you're halfway there.",
+    "The future depends on what you do today.",
+    "Discipline is the bridge between goals and accomplishment.",
+    "Every accomplishment starts with the decision to try.",
+    "Your only limit is the amount of effort you're willing to put in.",
+    "Hard work beats talent when talent doesn't work hard.",
+    "The harder you work for something, the greater you'll feel when you achieve it.",
+    "Don't let what you cannot do interfere with what you can do.",
+    "Opportunities don't happen. You create them.",
+    "Dream big. Work hard. Stay focused.",
+    "Act as if what you do makes a difference. It does.",
+    "Great things never come from comfort zones.",
+    "A little progress each day adds up to big results."
+  ];
+
+  const state = {
+    exams: [],
+    quoteOrder: shuffle([...Array(QUOTES.length).keys()])
+  };
+
+  const form = document.getElementById('addForm');
+  const subjectInput = document.getElementById('subjectInput');
+  const dateInput = document.getElementById('dateInput');
+  const timeInput = document.getElementById('timeInput');
+  const examsList = document.getElementById('examsList');
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) state.exams = JSON.parse(raw);
+    } catch (e) {
+      state.exams = [];
+    }
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.exams));
+  }
+
+  function quoteForIndex(i) {
+    return QUOTES[state.quoteOrder[i % QUOTES.length]];
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    const hasTime = iso.includes('T') && !iso.endsWith('T00:00:00');
+    const dateOpts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+    let out = d.toLocaleDateString(undefined, dateOpts);
+    if (hasTime) {
+      out += ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+    return out;
+  }
+
+  function diffParts(targetMs, nowMs) {
+    let diff = Math.max(0, targetMs - nowMs);
+    const days = Math.floor(diff / 86400000); diff -= days * 86400000;
+    const hours = Math.floor(diff / 3600000); diff -= hours * 3600000;
+    const mins = Math.floor(diff / 60000); diff -= mins * 60000;
+    const secs = Math.floor(diff / 1000);
+    return { days, hours, mins, secs };
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function addExam(subject, dateStr, timeStr) {
+    const iso = timeStr ? `${dateStr}T${timeStr}` : `${dateStr}T09:00`;
+    const exam = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      subject: subject.trim(),
+      datetime: iso
+    };
+    state.exams.push(exam);
+    save();
+    render();
+  }
+
+  function deleteExam(id) {
+    state.exams = state.exams.filter(e => e.id !== id);
+    save();
+    render();
+  }
+
+  function render() {
+    const now = Date.now();
+    const sorted = [...state.exams].sort(
+      (a, b) => new Date(a.datetime) - new Date(b.datetime)
+    );
+
+    if (sorted.length === 0) {
+      examsList.innerHTML = '<div class="empty">No exams yet. Add your first one above.</div>';
+      return;
+    }
+
+    examsList.innerHTML = '';
+    sorted.forEach((exam, i) => {
+      const target = new Date(exam.datetime).getTime();
+      const isDone = target <= now;
+      const msLeft = target - now;
+      const isUrgent = !isDone && msLeft <= 7 * 86400000;
+
+      const card = document.createElement('article');
+      card.className = 'exam-card' + (isDone ? ' done' : (isUrgent ? ' urgent' : ''));
+      card.dataset.target = target;
+
+      const { days, hours, mins, secs } = diffParts(target, now);
+
+      card.innerHTML = `
+        <div class="card-header">
+          <h2 class="subject"></h2>
+          <button class="delete-btn" aria-label="Delete exam" title="Delete">&times;</button>
+        </div>
+        ${isDone ? '<span class="done-badge">Done</span>' : ''}
+        <div class="exam-date"></div>
+        <div class="countdown">
+          <div class="time-unit"><span class="time-value" data-u="d">${days}</span><div class="time-label">Days</div></div>
+          <div class="time-unit"><span class="time-value" data-u="h">${pad(hours)}</span><div class="time-label">Hours</div></div>
+          <div class="time-unit"><span class="time-value" data-u="m">${pad(mins)}</span><div class="time-label">Mins</div></div>
+          <div class="time-unit"><span class="time-value" data-u="s">${pad(secs)}</span><div class="time-label">Secs</div></div>
+        </div>
+        <p class="quote"></p>
+      `;
+
+      card.querySelector('.subject').textContent = exam.subject;
+      card.querySelector('.exam-date').textContent = formatDate(exam.datetime);
+      card.querySelector('.quote').textContent = '“' + quoteForIndex(i) + '”';
+      card.querySelector('.delete-btn').addEventListener('click', () => deleteExam(exam.id));
+
+      examsList.appendChild(card);
+    });
+  }
+
+  function tick() {
+    const now = Date.now();
+    const cards = examsList.querySelectorAll('.exam-card');
+    let needsRerender = false;
+
+    cards.forEach(card => {
+      const target = Number(card.dataset.target);
+      const wasDone = card.classList.contains('done');
+      const isDone = target <= now;
+
+      if (isDone !== wasDone) {
+        needsRerender = true;
+        return;
+      }
+      if (isDone) return;
+
+      const msLeft = target - now;
+      const shouldBeUrgent = msLeft <= 7 * 86400000;
+      if (shouldBeUrgent !== card.classList.contains('urgent')) {
+        needsRerender = true;
+        return;
+      }
+
+      const { days, hours, mins, secs } = diffParts(target, now);
+      const values = card.querySelectorAll('.time-value');
+      values[0].textContent = days;
+      values[1].textContent = pad(hours);
+      values[2].textContent = pad(mins);
+      values[3].textContent = pad(secs);
+    });
+
+    if (needsRerender) render();
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const subject = subjectInput.value.trim();
+    const date = dateInput.value;
+    const time = timeInput.value;
+    if (!subject || !date) return;
+    addExam(subject, date, time);
+    form.reset();
+    subjectInput.focus();
+  });
+
+  load();
+  render();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
