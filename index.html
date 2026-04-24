@@ -407,6 +407,94 @@
     font-size: 1.3rem;
     padding: 0.3rem 0.55rem;
   }
+
+  /* Settings sub-nav */
+  .settings-tabs {
+    display: flex;
+    gap: 0.4rem;
+    background: var(--surface);
+    padding: 0.35rem;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    width: fit-content;
+  }
+
+  .settings-tabs button {
+    background: transparent;
+    border: none;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .settings-tabs button:hover { color: var(--text); }
+
+  .settings-tabs button.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .subview[hidden] { display: none; }
+
+  /* Quotes editor */
+  .subview-intro {
+    color: var(--text-soft);
+    font-size: 0.9rem;
+    margin: 0 0 0.9rem;
+  }
+
+  .quotes-editor {
+    width: 100%;
+    min-height: 320px;
+    padding: 0.85rem 1rem;
+    border: 1px solid #dbe1ec;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--surface);
+    line-height: 1.55;
+    resize: vertical;
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .quotes-editor:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(107, 138, 253, 0.15);
+  }
+
+  .quotes-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .quotes-actions button {
+    padding: 0.65rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  .btn-ghost { background: transparent; color: var(--danger); }
+  .btn-ghost:hover { background: #fde8e8; }
 </style>
 </head>
 <body>
@@ -421,29 +509,46 @@
     </section>
 
     <section class="view" id="settingsView" hidden>
-      <h2 class="section-title">Add an Exam</h2>
-      <form class="add-form" id="addForm" autocomplete="off">
-        <label>
-          Subject
-          <input type="text" id="subjectInput" placeholder="e.g. Mathematics" required maxlength="60" />
-        </label>
-        <label>
-          Date
-          <input type="date" id="dateInput" required />
-        </label>
-        <label>
-          Time (optional)
-          <input type="time" id="timeInput" />
-        </label>
-        <label>
-          Length
-          <input type="time" id="durationInput" value="01:30" />
-        </label>
-        <button type="submit">Add Exam</button>
-      </form>
+      <nav class="settings-tabs" role="tablist">
+        <button type="button" data-subview="exams" class="active" role="tab">Exams</button>
+        <button type="button" data-subview="quotes" role="tab">Quotes</button>
+      </nav>
 
-      <h2 class="section-title">Your Exams</h2>
-      <div class="settings-list" id="settingsExamsList"></div>
+      <div class="subview" id="subviewExams">
+        <h2 class="section-title">Add an Exam</h2>
+        <form class="add-form" id="addForm" autocomplete="off">
+          <label>
+            Subject
+            <input type="text" id="subjectInput" placeholder="e.g. Mathematics" required maxlength="60" />
+          </label>
+          <label>
+            Date
+            <input type="date" id="dateInput" required />
+          </label>
+          <label>
+            Time (optional)
+            <input type="time" id="timeInput" />
+          </label>
+          <label>
+            Length
+            <input type="time" id="durationInput" value="01:30" />
+          </label>
+          <button type="submit">Add Exam</button>
+        </form>
+
+        <h2 class="section-title">Your Exams</h2>
+        <div class="settings-list" id="settingsExamsList"></div>
+      </div>
+
+      <div class="subview" id="subviewQuotes" hidden>
+        <h2 class="section-title">Motivational Quotes</h2>
+        <p class="subview-intro">One quote per line. Saving reshuffles the order used by the cards on the home screen.</p>
+        <textarea class="quotes-editor" id="quotesEditor" spellcheck="false"></textarea>
+        <div class="quotes-actions">
+          <button type="button" class="btn-ghost" id="quotesReset">Reset to defaults</button>
+          <button type="button" class="btn-primary" id="quotesSave">Save quotes</button>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -456,9 +561,10 @@
 <script>
 (() => {
   const STORAGE_KEY = 'exam-countdown-exams';
+  const QUOTES_KEY = 'exam-countdown-quotes';
   const SAVE_PASSWORD = 'Quack';
 
-  const QUOTES = [
+  const DEFAULT_QUOTES = [
     "Success is the sum of small efforts repeated day in and day out.",
     "The expert in anything was once a beginner.",
     "Don't watch the clock; do what it does. Keep going.",
@@ -481,9 +587,11 @@
     "A little progress each day adds up to big results."
   ];
 
+  let QUOTES = DEFAULT_QUOTES.slice();
+
   const state = {
     exams: [],
-    quoteOrder: shuffle([...Array(QUOTES.length).keys()])
+    quoteOrder: []
   };
 
   const form = document.getElementById('addForm');
@@ -498,6 +606,12 @@
   const menuButton = document.getElementById('menuButton');
   const menuPanel = document.getElementById('menuPanel');
   const pageTagline = document.getElementById('pageTagline');
+  const settingsTabs = settingsView.querySelector('.settings-tabs');
+  const subviewExams = document.getElementById('subviewExams');
+  const subviewQuotes = document.getElementById('subviewQuotes');
+  const quotesEditor = document.getElementById('quotesEditor');
+  const quotesSave = document.getElementById('quotesSave');
+  const quotesReset = document.getElementById('quotesReset');
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -514,10 +628,24 @@
     } catch (e) {
       state.exams = [];
     }
+    try {
+      const rawQuotes = localStorage.getItem(QUOTES_KEY);
+      if (rawQuotes) {
+        const parsed = JSON.parse(rawQuotes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          QUOTES = parsed.map(String);
+        }
+      }
+    } catch (e) { /* keep defaults */ }
+    state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
   }
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.exams));
+  }
+
+  function saveQuotesToStorage() {
+    localStorage.setItem(QUOTES_KEY, JSON.stringify(QUOTES));
   }
 
   function quoteForIndex(i) {
@@ -750,8 +878,50 @@
     menuPanel.querySelectorAll('button').forEach(b => {
       b.classList.toggle('active', b.dataset.view === name);
     });
+    if (isSettings) showSubview('exams');
     closeMenu();
   }
+
+  function showSubview(name) {
+    subviewExams.hidden = name !== 'exams';
+    subviewQuotes.hidden = name !== 'quotes';
+    settingsTabs.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.dataset.subview === name);
+    });
+    if (name === 'quotes') {
+      quotesEditor.value = QUOTES.join('\n');
+    }
+  }
+
+  settingsTabs.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-subview]');
+    if (btn) showSubview(btn.dataset.subview);
+  });
+
+  quotesSave.addEventListener('click', () => {
+    const lines = quotesEditor.value
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean);
+    if (lines.length === 0) {
+      window.alert('Please provide at least one quote.');
+      return;
+    }
+    QUOTES = lines;
+    saveQuotesToStorage();
+    state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
+    render();
+    window.alert('Quotes saved.');
+  });
+
+  quotesReset.addEventListener('click', () => {
+    if (!window.confirm('Reset quotes to the original defaults? This will replace your current list.')) return;
+    QUOTES = DEFAULT_QUOTES.slice();
+    saveQuotesToStorage();
+    quotesEditor.value = QUOTES.join('\n');
+    state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
+    render();
+  });
 
   function openMenu() {
     menuPanel.hidden = false;
