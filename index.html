@@ -293,18 +293,32 @@
     main { padding: 0 0.85rem 2rem; }
   }
 
-  /* Secret hotspot — invisible bottom-left tap target */
+  /* Secret menu button — visible circle in the top-left */
   .secret-hotspot {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 64px;
-    height: 64px;
-    background: transparent;
-    border: none;
-    cursor: default;
+    top: 1rem;
+    left: 1rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid #dbe1ec;
+    box-shadow: var(--shadow);
+    color: var(--text-soft);
+    font-size: 1.1rem;
+    cursor: pointer;
     z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, background 0.15s, color 0.15s;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .secret-hotspot:hover {
+    background: var(--primary);
+    color: white;
+    transform: scale(1.05);
   }
 
   /* Modal */
@@ -430,7 +444,7 @@
     <div class="exams" id="examsList"></div>
   </main>
 
-  <button class="secret-hotspot" id="secretHotspot" aria-hidden="true" tabindex="-1"></button>
+  <button type="button" class="secret-hotspot" id="secretHotspot" aria-label="Secret menu" title="🔒">🔒</button>
 
 <script>
 (() => {
@@ -664,22 +678,8 @@
     subjectInput.focus();
   });
 
-  /* ===== Secret menu: 3 fast taps in bottom-left corner ===== */
-  const TAP_WINDOW_MS = 1500;
-  const TAPS_REQUIRED = 3;
-  let tapTimes = [];
-
-  function handleSecretTap(e) {
-    e.preventDefault();
-    const now = Date.now();
-    tapTimes = tapTimes.filter(t => now - t < TAP_WINDOW_MS);
-    tapTimes.push(now);
-    if (tapTimes.length >= TAPS_REQUIRED) {
-      tapTimes = [];
-      promptSecret();
-    }
-  }
-  secretHotspot.addEventListener('click', handleSecretTap);
+  /* ===== Secret menu: top-left circle button ===== */
+  secretHotspot.addEventListener('click', () => promptSecret());
 
   function promptSecret() {
     const pwd = window.prompt('Enter password:');
