@@ -67,7 +67,7 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr auto;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr auto;
     gap: 0.75rem;
     align-items: end;
     margin-bottom: 2rem;
@@ -209,8 +209,20 @@
   .exam-date {
     font-size: 0.85rem;
     color: var(--text-soft);
-    margin-bottom: 1rem;
+    margin-bottom: 0.25rem;
   }
+
+  .exam-duration {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .exam-card.urgent .exam-duration { color: var(--warn-text); opacity: 0.85; }
+  .exam-card.done .exam-duration { color: var(--done-text); }
 
   .countdown {
     display: grid;
@@ -280,6 +292,112 @@
     header { padding: 1.75rem 1rem 1rem; }
     main { padding: 0 0.85rem 2rem; }
   }
+
+  /* Secret hotspot — invisible bottom-left tap target */
+  .secret-hotspot {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 64px;
+    height: 64px;
+    background: transparent;
+    border: none;
+    cursor: default;
+    z-index: 50;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 30, 50, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+  }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(20, 30, 50, 0.25);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .modal p {
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+    color: var(--text-soft);
+  }
+
+  .modal textarea {
+    width: 100%;
+    flex: 1;
+    min-height: 260px;
+    padding: 0.75rem;
+    border: 1px solid #dbe1ec;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--text);
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  .modal textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(107, 138, 253, 0.15);
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .modal-actions button {
+    padding: 0.6rem 1.1rem;
+    border-radius: 10px;
+    border: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary {
+    background: var(--surface-alt);
+    color: var(--text);
+  }
+  .btn-secondary:hover { background: #dde4ef; }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--danger);
+  }
+  .btn-ghost:hover { background: #fde8e8; }
 </style>
 </head>
 <body>
@@ -302,17 +420,25 @@
         Time (optional)
         <input type="time" id="timeInput" />
       </label>
+      <label>
+        Length (mins)
+        <input type="number" id="durationInput" min="1" max="1440" step="5" placeholder="e.g. 90" />
+      </label>
       <button type="submit">Add Exam</button>
     </form>
 
     <div class="exams" id="examsList"></div>
   </main>
 
+  <button class="secret-hotspot" id="secretHotspot" aria-hidden="true" tabindex="-1"></button>
+
 <script>
 (() => {
   const STORAGE_KEY = 'exam-countdown-exams';
+  const QUOTES_KEY = 'exam-countdown-quotes';
+  const SECRET_PASSWORD = 'quack';
 
-  const QUOTES = [
+  const DEFAULT_QUOTES = [
     "Success is the sum of small efforts repeated day in and day out.",
     "The expert in anything was once a beginner.",
     "Don't watch the clock; do what it does. Keep going.",
@@ -335,16 +461,20 @@
     "A little progress each day adds up to big results."
   ];
 
+  let QUOTES = DEFAULT_QUOTES.slice();
+
   const state = {
     exams: [],
-    quoteOrder: shuffle([...Array(QUOTES.length).keys()])
+    quoteOrder: []
   };
 
   const form = document.getElementById('addForm');
   const subjectInput = document.getElementById('subjectInput');
   const dateInput = document.getElementById('dateInput');
   const timeInput = document.getElementById('timeInput');
+  const durationInput = document.getElementById('durationInput');
   const examsList = document.getElementById('examsList');
+  const secretHotspot = document.getElementById('secretHotspot');
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -361,10 +491,24 @@
     } catch (e) {
       state.exams = [];
     }
+    try {
+      const rawQuotes = localStorage.getItem(QUOTES_KEY);
+      if (rawQuotes) {
+        const parsed = JSON.parse(rawQuotes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          QUOTES = parsed.map(String);
+        }
+      }
+    } catch (e) { /* keep defaults */ }
+    state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
   }
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.exams));
+  }
+
+  function saveQuotes() {
+    localStorage.setItem(QUOTES_KEY, JSON.stringify(QUOTES));
   }
 
   function quoteForIndex(i) {
@@ -393,12 +537,22 @@
 
   function pad(n) { return String(n).padStart(2, '0'); }
 
-  function addExam(subject, dateStr, timeStr) {
+  function formatDuration(mins) {
+    if (!mins || mins <= 0) return '';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h && m) return `${h}h ${m}m`;
+    if (h) return `${h}h`;
+    return `${m}m`;
+  }
+
+  function addExam(subject, dateStr, timeStr, durationMins) {
     const iso = timeStr ? `${dateStr}T${timeStr}` : `${dateStr}T09:00`;
     const exam = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       subject: subject.trim(),
-      datetime: iso
+      datetime: iso,
+      durationMins: durationMins || 0
     };
     state.exams.push(exam);
     save();
@@ -435,6 +589,8 @@
 
       const { days, hours, mins, secs } = diffParts(target, now);
 
+      const durationStr = formatDuration(exam.durationMins);
+
       card.innerHTML = `
         <div class="card-header">
           <h2 class="subject"></h2>
@@ -442,6 +598,7 @@
         </div>
         ${isDone ? '<span class="done-badge">Done</span>' : ''}
         <div class="exam-date"></div>
+        ${durationStr ? '<div class="exam-duration">⏱ Length: <span class="dur-value"></span></div>' : ''}
         <div class="countdown">
           <div class="time-unit"><span class="time-value" data-u="d">${days}</span><div class="time-label">Days</div></div>
           <div class="time-unit"><span class="time-value" data-u="h">${pad(hours)}</span><div class="time-label">Hours</div></div>
@@ -453,6 +610,7 @@
 
       card.querySelector('.subject').textContent = exam.subject;
       card.querySelector('.exam-date').textContent = formatDate(exam.datetime);
+      if (durationStr) card.querySelector('.dur-value').textContent = durationStr;
       card.querySelector('.quote').textContent = '“' + quoteForIndex(i) + '”';
       card.querySelector('.delete-btn').addEventListener('click', () => deleteExam(exam.id));
 
@@ -499,11 +657,92 @@
     const subject = subjectInput.value.trim();
     const date = dateInput.value;
     const time = timeInput.value;
+    const duration = parseInt(durationInput.value, 10);
     if (!subject || !date) return;
-    addExam(subject, date, time);
+    addExam(subject, date, time, isNaN(duration) ? 0 : duration);
     form.reset();
     subjectInput.focus();
   });
+
+  /* ===== Secret menu: 3 fast taps in bottom-left corner ===== */
+  const TAP_WINDOW_MS = 1500;
+  const TAPS_REQUIRED = 3;
+  let tapTimes = [];
+
+  function handleSecretTap(e) {
+    e.preventDefault();
+    const now = Date.now();
+    tapTimes = tapTimes.filter(t => now - t < TAP_WINDOW_MS);
+    tapTimes.push(now);
+    if (tapTimes.length >= TAPS_REQUIRED) {
+      tapTimes = [];
+      promptSecret();
+    }
+  }
+  secretHotspot.addEventListener('click', handleSecretTap);
+
+  function promptSecret() {
+    const pwd = window.prompt('Enter password:');
+    if (pwd === null) return;
+    if (pwd === SECRET_PASSWORD) {
+      openQuoteEditor();
+    } else {
+      window.alert('Incorrect password.');
+    }
+  }
+
+  /* ===== Quote editor modal ===== */
+  function openQuoteEditor() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <h2>Edit Motivational Quotes</h2>
+      <p>One quote per line. Saved quotes apply to new sessions and reshuffle now.</p>
+      <textarea spellcheck="false"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-act="reset">Reset to defaults</button>
+        <button type="button" class="btn-secondary" data-act="cancel">Cancel</button>
+        <button type="button" class="btn-primary" data-act="save">Save</button>
+      </div>
+    `;
+
+    const textarea = modal.querySelector('textarea');
+    textarea.value = QUOTES.join('\n');
+
+    function close() { document.body.removeChild(overlay); }
+
+    modal.querySelector('[data-act="cancel"]').addEventListener('click', close);
+    modal.querySelector('[data-act="reset"]').addEventListener('click', () => {
+      if (window.confirm('Reset quotes to the original defaults?')) {
+        textarea.value = DEFAULT_QUOTES.join('\n');
+      }
+    });
+    modal.querySelector('[data-act="save"]').addEventListener('click', () => {
+      const lines = textarea.value
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
+      if (lines.length === 0) {
+        window.alert('Please provide at least one quote.');
+        return;
+      }
+      QUOTES = lines;
+      saveQuotes();
+      state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
+      render();
+      close();
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    textarea.focus();
+  }
 
   load();
   render();
