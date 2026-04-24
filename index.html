@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Exam Countdown Tracker</title>
+<title>Revision Hub</title>
 <style>
   :root {
     --bg: #f4f7fb;
@@ -412,39 +412,167 @@
     color: var(--danger);
   }
   .btn-ghost:hover { background: #fde8e8; }
+
+  /* Menu button (top-right) — mirrors the secret circle */
+  .menu-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid #dbe1ec;
+    box-shadow: var(--shadow);
+    color: var(--text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, background 0.15s, color 0.15s;
+  }
+
+  .menu-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: scale(1.05);
+  }
+
+  .menu-panel {
+    position: fixed;
+    top: 4rem;
+    right: 1rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px rgba(20, 30, 50, 0.18);
+    padding: 0.4rem;
+    z-index: 59;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .menu-panel[hidden] { display: none; }
+
+  .menu-panel button {
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .menu-panel button:hover { background: var(--surface-alt); }
+  .menu-panel button.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .view[hidden] { display: none; }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin: 0 0 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .section-title:not(:first-child) { margin-top: 2rem; }
+
+  /* Settings exam list */
+  .settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .settings-row {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .settings-row.done { opacity: 0.55; }
+
+  .settings-row-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .settings-row-title {
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 0.15rem;
+    word-break: break-word;
+  }
+
+  .settings-row-meta {
+    font-size: 0.8rem;
+    color: var(--text-soft);
+  }
+
+  .settings-row .delete-btn {
+    font-size: 1.3rem;
+    padding: 0.3rem 0.55rem;
+  }
 </style>
 </head>
 <body>
   <header>
-    <h1>Exam Countdown</h1>
-    <p>Stay calm. Stay prepared. Track every exam in one place.</p>
+    <h1 id="pageTitle">Revision Hub</h1>
+    <p id="pageTagline">Stay calm. Stay prepared. Track every exam in one place.</p>
   </header>
 
   <main>
-    <form class="add-form" id="addForm" autocomplete="off">
-      <label>
-        Subject
-        <input type="text" id="subjectInput" placeholder="e.g. Mathematics" required maxlength="60" />
-      </label>
-      <label>
-        Date
-        <input type="date" id="dateInput" required />
-      </label>
-      <label>
-        Time (optional)
-        <input type="time" id="timeInput" />
-      </label>
-      <label>
-        Length (mins)
-        <input type="number" id="durationInput" min="1" max="1440" step="5" placeholder="e.g. 90" />
-      </label>
-      <button type="submit">Add Exam</button>
-    </form>
+    <section class="view" id="homeView">
+      <div class="exams" id="examsList"></div>
+    </section>
 
-    <div class="exams" id="examsList"></div>
+    <section class="view" id="settingsView" hidden>
+      <h2 class="section-title">Add an Exam</h2>
+      <form class="add-form" id="addForm" autocomplete="off">
+        <label>
+          Subject
+          <input type="text" id="subjectInput" placeholder="e.g. Mathematics" required maxlength="60" />
+        </label>
+        <label>
+          Date
+          <input type="date" id="dateInput" required />
+        </label>
+        <label>
+          Time (optional)
+          <input type="time" id="timeInput" />
+        </label>
+        <label>
+          Length (mins)
+          <input type="number" id="durationInput" min="1" max="1440" step="5" placeholder="e.g. 90" />
+        </label>
+        <button type="submit">Add Exam</button>
+      </form>
+
+      <h2 class="section-title">Your Exams</h2>
+      <div class="settings-list" id="settingsExamsList"></div>
+    </section>
   </main>
 
   <button type="button" class="secret-hotspot" id="secretHotspot" aria-label="Secret menu" title="🔒">🔒</button>
+  <button type="button" class="menu-btn" id="menuButton" aria-label="Menu" aria-haspopup="true" aria-expanded="false">☰</button>
+  <nav class="menu-panel" id="menuPanel" hidden>
+    <button type="button" data-view="home">Home</button>
+    <button type="button" data-view="settings">Settings</button>
+  </nav>
 
 <script>
 (() => {
@@ -488,7 +616,13 @@
   const timeInput = document.getElementById('timeInput');
   const durationInput = document.getElementById('durationInput');
   const examsList = document.getElementById('examsList');
+  const settingsExamsList = document.getElementById('settingsExamsList');
   const secretHotspot = document.getElementById('secretHotspot');
+  const homeView = document.getElementById('homeView');
+  const settingsView = document.getElementById('settingsView');
+  const menuButton = document.getElementById('menuButton');
+  const menuPanel = document.getElementById('menuPanel');
+  const pageTagline = document.getElementById('pageTagline');
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -586,49 +720,80 @@
     );
 
     if (sorted.length === 0) {
-      examsList.innerHTML = '<div class="empty">No exams yet. Add your first one above.</div>';
-      return;
+      examsList.innerHTML = '<div class="empty">No exams yet. Open the menu and go to Settings to add your first one.</div>';
+    } else {
+      examsList.innerHTML = '';
+      sorted.forEach((exam, i) => {
+        const target = new Date(exam.datetime).getTime();
+        const isDone = target <= now;
+        const msLeft = target - now;
+        const isUrgent = !isDone && msLeft <= 7 * 86400000;
+
+        const card = document.createElement('article');
+        card.className = 'exam-card' + (isDone ? ' done' : (isUrgent ? ' urgent' : ''));
+        card.dataset.target = target;
+
+        const { days, hours, mins, secs } = diffParts(target, now);
+
+        const durationStr = formatDuration(exam.durationMins);
+
+        card.innerHTML = `
+          <div class="card-header">
+            <h2 class="subject"></h2>
+          </div>
+          ${isDone ? '<span class="done-badge">Done</span>' : ''}
+          <div class="exam-date"></div>
+          ${durationStr ? '<div class="exam-duration">⏱ Length: <span class="dur-value"></span></div>' : ''}
+          <div class="countdown">
+            <div class="time-unit"><span class="time-value" data-u="d">${days}</span><div class="time-label">Days</div></div>
+            <div class="time-unit"><span class="time-value" data-u="h">${pad(hours)}</span><div class="time-label">Hours</div></div>
+            <div class="time-unit"><span class="time-value" data-u="m">${pad(mins)}</span><div class="time-label">Mins</div></div>
+            <div class="time-unit"><span class="time-value" data-u="s">${pad(secs)}</span><div class="time-label">Secs</div></div>
+          </div>
+          <p class="quote"></p>
+        `;
+
+        card.querySelector('.subject').textContent = exam.subject;
+        card.querySelector('.exam-date').textContent = formatDate(exam.datetime);
+        if (durationStr) card.querySelector('.dur-value').textContent = durationStr;
+        card.querySelector('.quote').textContent = '“' + quoteForIndex(i) + '”';
+
+        examsList.appendChild(card);
+      });
     }
 
-    examsList.innerHTML = '';
-    sorted.forEach((exam, i) => {
+    renderSettingsList(sorted);
+  }
+
+  function renderSettingsList(sorted) {
+    if (!sorted.length) {
+      settingsExamsList.innerHTML = '<div class="empty">No exams yet. Add one using the form above.</div>';
+      return;
+    }
+    settingsExamsList.innerHTML = '';
+    const now = Date.now();
+    sorted.forEach(exam => {
       const target = new Date(exam.datetime).getTime();
       const isDone = target <= now;
-      const msLeft = target - now;
-      const isUrgent = !isDone && msLeft <= 7 * 86400000;
-
-      const card = document.createElement('article');
-      card.className = 'exam-card' + (isDone ? ' done' : (isUrgent ? ' urgent' : ''));
-      card.dataset.target = target;
-
-      const { days, hours, mins, secs } = diffParts(target, now);
-
       const durationStr = formatDuration(exam.durationMins);
-
-      card.innerHTML = `
-        <div class="card-header">
-          <h2 class="subject"></h2>
-          <button class="delete-btn" aria-label="Delete exam" title="Delete">&times;</button>
+      const row = document.createElement('div');
+      row.className = 'settings-row' + (isDone ? ' done' : '');
+      row.innerHTML = `
+        <div class="settings-row-main">
+          <p class="settings-row-title"></p>
+          <div class="settings-row-meta"></div>
         </div>
-        ${isDone ? '<span class="done-badge">Done</span>' : ''}
-        <div class="exam-date"></div>
-        ${durationStr ? '<div class="exam-duration">⏱ Length: <span class="dur-value"></span></div>' : ''}
-        <div class="countdown">
-          <div class="time-unit"><span class="time-value" data-u="d">${days}</span><div class="time-label">Days</div></div>
-          <div class="time-unit"><span class="time-value" data-u="h">${pad(hours)}</span><div class="time-label">Hours</div></div>
-          <div class="time-unit"><span class="time-value" data-u="m">${pad(mins)}</span><div class="time-label">Mins</div></div>
-          <div class="time-unit"><span class="time-value" data-u="s">${pad(secs)}</span><div class="time-label">Secs</div></div>
-        </div>
-        <p class="quote"></p>
+        <button class="delete-btn" aria-label="Delete exam" title="Delete">&times;</button>
       `;
-
-      card.querySelector('.subject').textContent = exam.subject;
-      card.querySelector('.exam-date').textContent = formatDate(exam.datetime);
-      if (durationStr) card.querySelector('.dur-value').textContent = durationStr;
-      card.querySelector('.quote').textContent = '“' + quoteForIndex(i) + '”';
-      card.querySelector('.delete-btn').addEventListener('click', () => deleteExam(exam.id));
-
-      examsList.appendChild(card);
+      row.querySelector('.settings-row-title').textContent = exam.subject;
+      const metaParts = [formatDate(exam.datetime)];
+      if (durationStr) metaParts.push(durationStr);
+      if (isDone) metaParts.push('Done');
+      row.querySelector('.settings-row-meta').textContent = metaParts.join(' · ');
+      row.querySelector('.delete-btn').addEventListener('click', () => {
+        if (window.confirm(`Delete "${exam.subject}"?`)) deleteExam(exam.id);
+      });
+      settingsExamsList.appendChild(row);
     });
   }
 
@@ -744,8 +909,52 @@
     textarea.focus();
   }
 
+  /* ===== View switching ===== */
+  const TAGLINES = {
+    home: 'Stay calm. Stay prepared. Track every exam in one place.',
+    settings: 'Add or remove exams from your revision hub.'
+  };
+
+  function showView(name) {
+    const isSettings = name === 'settings';
+    homeView.hidden = isSettings;
+    settingsView.hidden = !isSettings;
+    pageTagline.textContent = TAGLINES[name] || TAGLINES.home;
+    menuPanel.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === name);
+    });
+    closeMenu();
+  }
+
+  function openMenu() {
+    menuPanel.hidden = false;
+    menuButton.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    menuPanel.hidden = true;
+    menuButton.setAttribute('aria-expanded', 'false');
+  }
+
+  menuButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menuPanel.hidden ? openMenu() : closeMenu();
+  });
+  menuPanel.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-view]');
+    if (btn) showView(btn.dataset.view);
+  });
+  document.addEventListener('click', (e) => {
+    if (!menuPanel.hidden && !menuPanel.contains(e.target) && e.target !== menuButton) {
+      closeMenu();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+  });
+
   load();
   render();
+  showView('home');
   setInterval(tick, 1000);
 })();
 </script>
