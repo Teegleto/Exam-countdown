@@ -293,127 +293,7 @@
     main { padding: 0 0.85rem 2rem; }
   }
 
-  /* Secret menu button — visible circle in the top-left */
-  .secret-hotspot {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--surface);
-    border: 1px solid #dbe1ec;
-    box-shadow: var(--shadow);
-    color: var(--text-soft);
-    font-size: 1.1rem;
-    cursor: pointer;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.15s, background 0.15s, color 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .secret-hotspot:hover {
-    background: var(--primary);
-    color: white;
-    transform: scale(1.05);
-  }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(20, 30, 50, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    padding: 1rem;
-  }
-
-  .modal {
-    background: var(--surface);
-    border-radius: var(--radius);
-    box-shadow: 0 20px 60px rgba(20, 30, 50, 0.25);
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 540px;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .modal h2 {
-    margin: 0 0 0.35rem;
-    font-size: 1.2rem;
-    font-weight: 600;
-  }
-
-  .modal p {
-    margin: 0 0 1rem;
-    font-size: 0.85rem;
-    color: var(--text-soft);
-  }
-
-  .modal textarea {
-    width: 100%;
-    flex: 1;
-    min-height: 260px;
-    padding: 0.75rem;
-    border: 1px solid #dbe1ec;
-    border-radius: 10px;
-    font-family: inherit;
-    font-size: 0.9rem;
-    color: var(--text);
-    resize: vertical;
-    line-height: 1.5;
-  }
-
-  .modal textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(107, 138, 253, 0.15);
-  }
-
-  .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.6rem;
-    margin-top: 1rem;
-  }
-
-  .modal-actions button {
-    padding: 0.6rem 1.1rem;
-    border-radius: 10px;
-    border: none;
-    font-family: inherit;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .btn-secondary {
-    background: var(--surface-alt);
-    color: var(--text);
-  }
-  .btn-secondary:hover { background: #dde4ef; }
-
-  .btn-primary {
-    background: var(--primary);
-    color: white;
-  }
-  .btn-primary:hover { background: var(--primary-dark); }
-
-  .btn-ghost {
-    background: transparent;
-    color: var(--danger);
-  }
-  .btn-ghost:hover { background: #fde8e8; }
-
-  /* Menu button (top-right) — mirrors the secret circle */
+  /* Menu button (top-right) */
   .menu-btn {
     position: fixed;
     top: 1rem;
@@ -567,7 +447,6 @@
     </section>
   </main>
 
-  <button type="button" class="secret-hotspot" id="secretHotspot" aria-label="Secret menu" title="🔒">🔒</button>
   <button type="button" class="menu-btn" id="menuButton" aria-label="Menu" aria-haspopup="true" aria-expanded="false">☰</button>
   <nav class="menu-panel" id="menuPanel" hidden>
     <button type="button" data-view="home">Home</button>
@@ -577,10 +456,9 @@
 <script>
 (() => {
   const STORAGE_KEY = 'exam-countdown-exams';
-  const QUOTES_KEY = 'exam-countdown-quotes';
-  const SECRET_PASSWORD = 'quack';
+  const SAVE_PASSWORD = 'Quack';
 
-  const DEFAULT_QUOTES = [
+  const QUOTES = [
     "Success is the sum of small efforts repeated day in and day out.",
     "The expert in anything was once a beginner.",
     "Don't watch the clock; do what it does. Keep going.",
@@ -603,11 +481,9 @@
     "A little progress each day adds up to big results."
   ];
 
-  let QUOTES = DEFAULT_QUOTES.slice();
-
   const state = {
     exams: [],
-    quoteOrder: []
+    quoteOrder: shuffle([...Array(QUOTES.length).keys()])
   };
 
   const form = document.getElementById('addForm');
@@ -617,7 +493,6 @@
   const durationInput = document.getElementById('durationInput');
   const examsList = document.getElementById('examsList');
   const settingsExamsList = document.getElementById('settingsExamsList');
-  const secretHotspot = document.getElementById('secretHotspot');
   const homeView = document.getElementById('homeView');
   const settingsView = document.getElementById('settingsView');
   const menuButton = document.getElementById('menuButton');
@@ -639,24 +514,10 @@
     } catch (e) {
       state.exams = [];
     }
-    try {
-      const rawQuotes = localStorage.getItem(QUOTES_KEY);
-      if (rawQuotes) {
-        const parsed = JSON.parse(rawQuotes);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          QUOTES = parsed.map(String);
-        }
-      }
-    } catch (e) { /* keep defaults */ }
-    state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
   }
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.exams));
-  }
-
-  function saveQuotes() {
-    localStorage.setItem(QUOTES_KEY, JSON.stringify(QUOTES));
   }
 
   function quoteForIndex(i) {
@@ -838,76 +699,16 @@
     const time = timeInput.value;
     const duration = parseInt(durationInput.value, 10);
     if (!subject || !date) return;
+    const pwd = window.prompt('Enter password to save this exam:');
+    if (pwd === null) return;
+    if (pwd !== SAVE_PASSWORD) {
+      window.alert('Incorrect password. Exam not saved.');
+      return;
+    }
     addExam(subject, date, time, isNaN(duration) ? 0 : duration);
     form.reset();
     subjectInput.focus();
   });
-
-  /* ===== Secret menu: top-left circle button ===== */
-  secretHotspot.addEventListener('click', () => promptSecret());
-
-  function promptSecret() {
-    const pwd = window.prompt('Enter password:');
-    if (pwd === null) return;
-    if (pwd === SECRET_PASSWORD) {
-      openQuoteEditor();
-    } else {
-      window.alert('Incorrect password.');
-    }
-  }
-
-  /* ===== Quote editor modal ===== */
-  function openQuoteEditor() {
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.innerHTML = `
-      <h2>Edit Motivational Quotes</h2>
-      <p>One quote per line. Saved quotes apply to new sessions and reshuffle now.</p>
-      <textarea spellcheck="false"></textarea>
-      <div class="modal-actions">
-        <button type="button" class="btn-ghost" data-act="reset">Reset to defaults</button>
-        <button type="button" class="btn-secondary" data-act="cancel">Cancel</button>
-        <button type="button" class="btn-primary" data-act="save">Save</button>
-      </div>
-    `;
-
-    const textarea = modal.querySelector('textarea');
-    textarea.value = QUOTES.join('\n');
-
-    function close() { document.body.removeChild(overlay); }
-
-    modal.querySelector('[data-act="cancel"]').addEventListener('click', close);
-    modal.querySelector('[data-act="reset"]').addEventListener('click', () => {
-      if (window.confirm('Reset quotes to the original defaults?')) {
-        textarea.value = DEFAULT_QUOTES.join('\n');
-      }
-    });
-    modal.querySelector('[data-act="save"]').addEventListener('click', () => {
-      const lines = textarea.value
-        .split('\n')
-        .map(l => l.trim())
-        .filter(Boolean);
-      if (lines.length === 0) {
-        window.alert('Please provide at least one quote.');
-        return;
-      }
-      QUOTES = lines;
-      saveQuotes();
-      state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
-      render();
-      close();
-    });
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) close();
-    });
-
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-    textarea.focus();
-  }
 
   /* ===== View switching ===== */
   const TAGLINES = {
