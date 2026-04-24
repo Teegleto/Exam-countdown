@@ -82,7 +82,8 @@
     gap: 0.35rem;
   }
 
-  .add-form input {
+  .add-form input,
+  .add-form select {
     padding: 0.65rem 0.8rem;
     border: 1px solid #dbe1ec;
     border-radius: 10px;
@@ -93,10 +94,29 @@
     transition: border-color 0.15s, box-shadow 0.15s;
   }
 
-  .add-form input:focus {
+  .add-form input:focus,
+  .add-form select:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(107, 138, 253, 0.15);
+  }
+
+  .duration-picker {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .duration-picker select {
+    flex: 1;
+    min-width: 0;
+    padding: 0.65rem 0.6rem;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'><path fill='%238a96ad' d='M0 0l5 6 5-6z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 8px;
+    padding-right: 1.6rem;
   }
 
   .add-form button {
@@ -436,8 +456,11 @@
           <input type="time" id="timeInput" />
         </label>
         <label>
-          Length (mins)
-          <input type="number" id="durationInput" min="1" max="1440" step="5" placeholder="e.g. 90" />
+          Length
+          <div class="duration-picker">
+            <select id="durationHours" aria-label="Hours"></select>
+            <select id="durationMinutes" aria-label="Minutes"></select>
+          </div>
         </label>
         <button type="submit">Add Exam</button>
       </form>
@@ -490,7 +513,8 @@
   const subjectInput = document.getElementById('subjectInput');
   const dateInput = document.getElementById('dateInput');
   const timeInput = document.getElementById('timeInput');
-  const durationInput = document.getElementById('durationInput');
+  const durationHours = document.getElementById('durationHours');
+  const durationMinutes = document.getElementById('durationMinutes');
   const examsList = document.getElementById('examsList');
   const settingsExamsList = document.getElementById('settingsExamsList');
   const homeView = document.getElementById('homeView');
@@ -555,6 +579,33 @@
     return `${m}m`;
   }
 
+  function formatFinishTime(startIso, durationMins) {
+    if (!durationMins || durationMins <= 0) return '';
+    const start = new Date(startIso);
+    const finish = new Date(start.getTime() + durationMins * 60000);
+    const sameDay = start.toDateString() === finish.toDateString();
+    const timeStr = finish.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (sameDay) return timeStr;
+    return finish.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + timeStr;
+  }
+
+  function populateDurationPickers() {
+    for (let h = 0; h <= 8; h++) {
+      const opt = document.createElement('option');
+      opt.value = h;
+      opt.textContent = h + ' h';
+      durationHours.appendChild(opt);
+    }
+    for (let m = 0; m < 60; m += 5) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m + ' m';
+      durationMinutes.appendChild(opt);
+    }
+    durationHours.value = '1';
+    durationMinutes.value = '30';
+  }
+
   function addExam(subject, dateStr, timeStr, durationMins) {
     const iso = timeStr ? `${dateStr}T${timeStr}` : `${dateStr}T09:00`;
     const exam = {
@@ -597,6 +648,10 @@
         const { days, hours, mins, secs } = diffParts(target, now);
 
         const durationStr = formatDuration(exam.durationMins);
+        const finishStr = formatFinishTime(exam.datetime, exam.durationMins);
+        const durationLine = durationStr
+          ? `⏱ Length: <span class="dur-value"></span>${finishStr ? ' · Finishes <span class="finish-value"></span>' : ''}`
+          : '';
 
         card.innerHTML = `
           <div class="card-header">
@@ -604,7 +659,7 @@
           </div>
           ${isDone ? '<span class="done-badge">Done</span>' : ''}
           <div class="exam-date"></div>
-          ${durationStr ? '<div class="exam-duration">⏱ Length: <span class="dur-value"></span></div>' : ''}
+          ${durationStr ? `<div class="exam-duration">${durationLine}</div>` : ''}
           <div class="countdown">
             <div class="time-unit"><span class="time-value" data-u="d">${days}</span><div class="time-label">Days</div></div>
             <div class="time-unit"><span class="time-value" data-u="h">${pad(hours)}</span><div class="time-label">Hours</div></div>
@@ -616,7 +671,10 @@
 
         card.querySelector('.subject').textContent = exam.subject;
         card.querySelector('.exam-date').textContent = formatDate(exam.datetime);
-        if (durationStr) card.querySelector('.dur-value').textContent = durationStr;
+        if (durationStr) {
+          card.querySelector('.dur-value').textContent = durationStr;
+          if (finishStr) card.querySelector('.finish-value').textContent = finishStr;
+        }
         card.querySelector('.quote').textContent = '“' + quoteForIndex(i) + '”';
 
         examsList.appendChild(card);
@@ -649,6 +707,8 @@
       row.querySelector('.settings-row-title').textContent = exam.subject;
       const metaParts = [formatDate(exam.datetime)];
       if (durationStr) metaParts.push(durationStr);
+      const finishStr = formatFinishTime(exam.datetime, exam.durationMins);
+      if (finishStr) metaParts.push('finishes ' + finishStr);
       if (isDone) metaParts.push('Done');
       row.querySelector('.settings-row-meta').textContent = metaParts.join(' · ');
       row.querySelector('.delete-btn').addEventListener('click', () => {
@@ -697,7 +757,8 @@
     const subject = subjectInput.value.trim();
     const date = dateInput.value;
     const time = timeInput.value;
-    const duration = parseInt(durationInput.value, 10);
+    const duration = (parseInt(durationHours.value, 10) || 0) * 60
+                   + (parseInt(durationMinutes.value, 10) || 0);
     if (!subject || !date) return;
     const pwd = window.prompt('Enter password to save this exam:');
     if (pwd === null) return;
@@ -705,8 +766,10 @@
       window.alert('Incorrect password. Exam not saved.');
       return;
     }
-    addExam(subject, date, time, isNaN(duration) ? 0 : duration);
+    addExam(subject, date, time, duration);
     form.reset();
+    durationHours.value = '1';
+    durationMinutes.value = '30';
     subjectInput.focus();
   });
 
@@ -753,6 +816,7 @@
     if (e.key === 'Escape') closeMenu();
   });
 
+  populateDurationPickers();
   load();
   render();
   showView('home');
