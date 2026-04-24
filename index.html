@@ -907,6 +907,12 @@
       window.alert('Please provide at least one quote.');
       return;
     }
+    const pwd = window.prompt('Enter password to save quotes:');
+    if (pwd === null) return;
+    if (pwd !== SAVE_PASSWORD) {
+      window.alert('Incorrect password. Quotes not saved.');
+      return;
+    }
     QUOTES = lines;
     saveQuotesToStorage();
     state.quoteOrder = shuffle([...Array(QUOTES.length).keys()]);
@@ -916,6 +922,12 @@
 
   quotesReset.addEventListener('click', () => {
     if (!window.confirm('Reset quotes to the original defaults? This will replace your current list.')) return;
+    const pwd = window.prompt('Enter password to reset quotes:');
+    if (pwd === null) return;
+    if (pwd !== SAVE_PASSWORD) {
+      window.alert('Incorrect password. Quotes not reset.');
+      return;
+    }
     QUOTES = DEFAULT_QUOTES.slice();
     saveQuotesToStorage();
     quotesEditor.value = QUOTES.join('\n');
