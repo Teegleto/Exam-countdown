@@ -82,8 +82,7 @@
     gap: 0.35rem;
   }
 
-  .add-form input,
-  .add-form select {
+  .add-form input {
     padding: 0.65rem 0.8rem;
     border: 1px solid #dbe1ec;
     border-radius: 10px;
@@ -94,29 +93,10 @@
     transition: border-color 0.15s, box-shadow 0.15s;
   }
 
-  .add-form input:focus,
-  .add-form select:focus {
+  .add-form input:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(107, 138, 253, 0.15);
-  }
-
-  .duration-picker {
-    display: flex;
-    gap: 0.4rem;
-  }
-
-  .duration-picker select {
-    flex: 1;
-    min-width: 0;
-    padding: 0.65rem 0.6rem;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'><path fill='%238a96ad' d='M0 0l5 6 5-6z'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 0.6rem center;
-    background-size: 8px;
-    padding-right: 1.6rem;
   }
 
   .add-form button {
@@ -457,10 +437,7 @@
         </label>
         <label>
           Length
-          <div class="duration-picker">
-            <select id="durationHours" aria-label="Hours"></select>
-            <select id="durationMinutes" aria-label="Minutes"></select>
-          </div>
+          <input type="time" id="durationInput" value="01:30" />
         </label>
         <button type="submit">Add Exam</button>
       </form>
@@ -513,8 +490,7 @@
   const subjectInput = document.getElementById('subjectInput');
   const dateInput = document.getElementById('dateInput');
   const timeInput = document.getElementById('timeInput');
-  const durationHours = document.getElementById('durationHours');
-  const durationMinutes = document.getElementById('durationMinutes');
+  const durationInput = document.getElementById('durationInput');
   const examsList = document.getElementById('examsList');
   const settingsExamsList = document.getElementById('settingsExamsList');
   const homeView = document.getElementById('homeView');
@@ -589,21 +565,10 @@
     return finish.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + timeStr;
   }
 
-  function populateDurationPickers() {
-    for (let h = 0; h <= 8; h++) {
-      const opt = document.createElement('option');
-      opt.value = h;
-      opt.textContent = h + ' h';
-      durationHours.appendChild(opt);
-    }
-    for (let m = 0; m < 60; m += 5) {
-      const opt = document.createElement('option');
-      opt.value = m;
-      opt.textContent = m + ' m';
-      durationMinutes.appendChild(opt);
-    }
-    durationHours.value = '1';
-    durationMinutes.value = '30';
+  function parseDurationInput(value) {
+    if (!value) return 0;
+    const [h, m] = value.split(':').map(n => parseInt(n, 10) || 0);
+    return h * 60 + m;
   }
 
   function addExam(subject, dateStr, timeStr, durationMins) {
@@ -757,8 +722,7 @@
     const subject = subjectInput.value.trim();
     const date = dateInput.value;
     const time = timeInput.value;
-    const duration = (parseInt(durationHours.value, 10) || 0) * 60
-                   + (parseInt(durationMinutes.value, 10) || 0);
+    const duration = parseDurationInput(durationInput.value);
     if (!subject || !date) return;
     const pwd = window.prompt('Enter password to save this exam:');
     if (pwd === null) return;
@@ -768,8 +732,7 @@
     }
     addExam(subject, date, time, duration);
     form.reset();
-    durationHours.value = '1';
-    durationMinutes.value = '30';
+    durationInput.value = '01:30';
     subjectInput.focus();
   });
 
@@ -816,7 +779,6 @@
     if (e.key === 'Escape') closeMenu();
   });
 
-  populateDurationPickers();
   load();
   render();
   showView('home');
