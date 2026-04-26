@@ -665,27 +665,37 @@
   let pushInFlight = false;
   let pendingChanges = false;
 
-  function setSyncStatus(s) {
+  function setSyncStatus(s, detail) {
     if (!syncStatusEl) return;
     const labels = {
       idle: '',
       syncing: '⟳ Syncing…',
       synced: '✓ Synced',
-      offline: '⚠ Offline — using local data',
-      error: '⚠ Sync failed — saved locally'
+      offline: '⚠ Offline' + (detail ? ' — ' + detail : ' — using local data'),
+      error: '⚠ Sync failed' + (detail ? ' — ' + detail : ' — saved locally')
     };
     syncStatusEl.dataset.state = s;
     syncStatusEl.textContent = labels[s] || '';
   }
 
+  async function jsonbinRequest(url, init) {
+    const res = await fetch(url, init);
+    if (!res.ok) {
+      let body = '';
+      try { body = (await res.text()).slice(0, 160); } catch (e) { /* ignore */ }
+      const err = new Error('HTTP ' + res.status + (body ? ' — ' + body : ''));
+      err.status = res.status;
+      throw err;
+    }
+    return res.json();
+  }
+
   async function fetchRemote() {
     setSyncStatus('syncing');
     try {
-      const res = await fetch(JSONBIN_URL + '/latest', {
+      const data = await jsonbinRequest(JSONBIN_URL + '/latest', {
         headers: { 'X-Access-Key': JSONBIN_KEY }
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
       const record = (data && data.record) ? data.record : data;
       if (record && Array.isArray(record.exams)) {
         state.exams = record.exams;
@@ -694,7 +704,8 @@
       }
       setSyncStatus('synced');
     } catch (e) {
-      setSyncStatus('offline');
+      console.error('JSONBin fetch failed:', e);
+      setSyncStatus('offline', e.message);
     }
   }
 
@@ -706,7 +717,7 @@
     pushInFlight = true;
     setSyncStatus('syncing');
     try {
-      const res = await fetch(JSONBIN_URL, {
+      await jsonbinRequest(JSONBIN_URL, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -714,10 +725,10 @@
         },
         body: JSON.stringify({ exams: state.exams })
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
       setSyncStatus('synced');
     } catch (e) {
-      setSyncStatus('error');
+      console.error('JSONBin push failed:', e);
+      setSyncStatus('error', e.message);
     } finally {
       pushInFlight = false;
       if (pendingChanges) {
