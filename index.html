@@ -55,6 +55,18 @@
     font-size: 0.95rem;
   }
 
+  .sync-status {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    min-height: 1.1em;
+    transition: color 0.2s;
+  }
+  .sync-status[data-state="synced"] { color: #4f9d6e; }
+  .sync-status[data-state="syncing"] { color: var(--primary); }
+  .sync-status[data-state="offline"],
+  .sync-status[data-state="error"] { color: #c47a3d; }
+
   main {
     max-width: 960px;
     margin: 0 auto;
@@ -501,6 +513,7 @@
   <header>
     <h1 id="pageTitle">Revision Hub</h1>
     <p id="pageTagline">Stay calm. Stay prepared. Track every exam in one place.</p>
+    <div class="sync-status" id="syncStatus"></div>
   </header>
 
   <main>
@@ -563,6 +576,9 @@
   const STORAGE_KEY = 'exam-countdown-exams';
   const QUOTES_KEY = 'exam-countdown-quotes';
   const SAVE_PASSWORD = 'Quack';
+  const JSONBIN_BIN_ID = '69ee444c36566621a8f3a85f';
+  const JSONBIN_KEY = '$2a$10$VLqtJYJNOq9KDHJ1u8TaXeUqazTjHr0q8P1HnPfOhl/LUJUoHQXNG';
+  const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID;
 
   const DEFAULT_QUOTES = [
     "Success is the sum of small efforts repeated day in and day out.",
@@ -644,6 +660,73 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.exams));
   }
 
+  /* ===== Remote sync (JSONBin) ===== */
+  const syncStatusEl = document.getElementById('syncStatus');
+  let pushInFlight = false;
+  let pendingChanges = false;
+
+  function setSyncStatus(s) {
+    if (!syncStatusEl) return;
+    const labels = {
+      idle: '',
+      syncing: '⟳ Syncing…',
+      synced: '✓ Synced',
+      offline: '⚠ Offline — using local data',
+      error: '⚠ Sync failed — saved locally'
+    };
+    syncStatusEl.dataset.state = s;
+    syncStatusEl.textContent = labels[s] || '';
+  }
+
+  async function fetchRemote() {
+    setSyncStatus('syncing');
+    try {
+      const res = await fetch(JSONBIN_URL + '/latest', {
+        headers: { 'X-Master-Key': JSONBIN_KEY }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const record = (data && data.record) ? data.record : data;
+      if (record && Array.isArray(record.exams)) {
+        state.exams = record.exams;
+        save();
+        render();
+      }
+      setSyncStatus('synced');
+    } catch (e) {
+      setSyncStatus('offline');
+    }
+  }
+
+  async function pushRemote() {
+    if (pushInFlight) {
+      pendingChanges = true;
+      return;
+    }
+    pushInFlight = true;
+    setSyncStatus('syncing');
+    try {
+      const res = await fetch(JSONBIN_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_KEY
+        },
+        body: JSON.stringify({ exams: state.exams })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      setSyncStatus('synced');
+    } catch (e) {
+      setSyncStatus('error');
+    } finally {
+      pushInFlight = false;
+      if (pendingChanges) {
+        pendingChanges = false;
+        pushRemote();
+      }
+    }
+  }
+
   function saveQuotesToStorage() {
     localStorage.setItem(QUOTES_KEY, JSON.stringify(QUOTES));
   }
@@ -709,12 +792,14 @@
     };
     state.exams.push(exam);
     save();
+    pushRemote();
     render();
   }
 
   function deleteExam(id) {
     state.exams = state.exams.filter(e => e.id !== id);
     save();
+    pushRemote();
     render();
   }
 
@@ -965,6 +1050,8 @@
   render();
   showView('home');
   setInterval(tick, 1000);
+  fetchRemote();
+  window.addEventListener('online', fetchRemote);
 })();
 </script>
 </body>
