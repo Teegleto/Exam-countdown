@@ -722,6 +722,274 @@
 
   .btn-ghost { background: var(--paper); color: var(--danger); border-color: var(--danger); }
   .btn-ghost:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--danger); }
+
+  /* ===== Flashcards ===== */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.6rem;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  .breadcrumb button,
+  .breadcrumb span {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .breadcrumb button:hover { color: var(--ink); text-decoration: underline; }
+  .breadcrumb .crumb-sep { color: var(--muted); cursor: default; }
+  .breadcrumb .crumb-current { color: var(--ink); cursor: default; }
+
+  .fc-toolbar {
+    display: flex;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.4rem;
+  }
+
+  .fc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .fc-row {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    padding: 1rem 1.15rem;
+    box-shadow: var(--shadow-stack);
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    transition: transform 0.12s, box-shadow 0.12s;
+    cursor: pointer;
+  }
+  .fc-row:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-stack-lift); }
+  .fc-row-main { flex: 1; min-width: 0; }
+  .fc-row-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--ink);
+    margin: 0 0 0.15rem;
+    word-break: break-word;
+  }
+  .fc-row-meta {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .fc-row-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+  .fc-row-actions .icon-btn {
+    background: transparent;
+    border: none;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    transition: background 0.15s, color 0.15s;
+  }
+  .fc-row-actions .icon-btn:hover { color: var(--ink); background: rgba(28,31,18,0.07); }
+  .fc-row-actions .icon-btn.danger:hover { color: var(--danger); background: rgba(200,84,71,0.12); }
+
+  .fc-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  /* ----- Card review ----- */
+  .fc-review {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 1rem 0 2rem;
+  }
+  .fc-position {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+    font-weight: 700;
+  }
+  .flashcard {
+    width: 100%;
+    max-width: 520px;
+    aspect-ratio: 3 / 2;
+    perspective: 1400px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .flashcard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.55s cubic-bezier(0.4, 0.1, 0.3, 1.05);
+    transform-style: preserve-3d;
+  }
+  .flashcard[data-flipped="true"] .flashcard-inner { transform: rotateY(180deg); }
+  .flashcard-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.6rem;
+    text-align: center;
+  }
+  .flashcard-face.back { transform: rotateY(180deg); background: var(--ink); color: var(--paper); }
+  .flashcard-face .face-label {
+    position: absolute;
+    top: 0.85rem;
+    left: 1rem;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 800;
+    color: var(--ink-soft);
+  }
+  .flashcard-face.back .face-label { color: var(--paper-cool); opacity: 0.7; }
+  .flashcard-face .face-text {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+    line-height: 1.35;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .fc-controls {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .fc-controls button {
+    padding: 0.7rem 1.2rem;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--coral);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .fc-controls button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--coral); }
+  .fc-controls button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--coral); }
+  .fc-controls button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--edge); }
+
+  /* ----- Modal ----- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 12, 4, 0.55);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.4rem;
+    margin: 0 0 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+  .modal label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+  }
+  .modal input,
+  .modal textarea {
+    padding: 0.65rem 0.75rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: #fff;
+    transition: box-shadow 0.12s, transform 0.12s;
+  }
+  .modal textarea {
+    min-height: 90px;
+    resize: vertical;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.5;
+  }
+  .modal input:focus,
+  .modal textarea:focus {
+    outline: none;
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--coral);
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.7rem;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .modal-actions button {
+    padding: 0.7rem 1.2rem;
+    border-radius: 0;
+    border: 1.5px solid var(--ink);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
 </style>
 </head>
 <body>
@@ -734,6 +1002,11 @@
   <main>
     <section class="view" id="homeView">
       <div class="exams" id="examsList"></div>
+    </section>
+
+    <section class="view" id="flashcardsView" hidden>
+      <nav class="breadcrumb" id="flashcardsBreadcrumb"></nav>
+      <div class="flashcards-body" id="flashcardsBody"></div>
     </section>
 
     <section class="view" id="settingsView" hidden>
@@ -783,13 +1056,26 @@
   <button type="button" class="menu-btn" id="menuButton" aria-label="Menu" aria-haspopup="true" aria-expanded="false">☰</button>
   <nav class="menu-panel" id="menuPanel" hidden>
     <button type="button" data-view="home">Home</button>
+    <button type="button" data-view="flashcards">Flashcards</button>
     <button type="button" data-view="settings">Settings</button>
   </nav>
+
+  <div class="modal-overlay" id="editModal" hidden>
+    <div class="modal">
+      <h2 id="modalTitle">Edit</h2>
+      <form id="modalForm" autocomplete="off"></form>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-modal-act="cancel">Cancel</button>
+        <button type="button" class="btn-primary" data-modal-act="save">Save</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 (() => {
   const STORAGE_KEY = 'exam-countdown-exams';
   const QUOTES_KEY = 'exam-countdown-quotes';
+  const FLASHCARDS_KEY = 'flashcard-sets';
   const SAVE_PASSWORD = 'Quack';
   const JSONBIN_BIN_ID = '69ee444c36566621a8f3a85f';
   const JSONBIN_KEY = '$2a$10$VLqtJYJNOq9KDHJ1u8TaXeUqazTjHr0q8P1HnPfOhl/LUJUoHQXNG';
@@ -822,6 +1108,8 @@
 
   const state = {
     exams: [],
+    flashcardSets: [],
+    flashcardsNav: { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null },
     quoteOrder: []
   };
 
@@ -840,6 +1128,12 @@
   const settingsTabs = settingsView.querySelector('.settings-tabs');
   const subviewExams = document.getElementById('subviewExams');
   const subviewQuotes = document.getElementById('subviewQuotes');
+  const flashcardsView = document.getElementById('flashcardsView');
+  const flashcardsBreadcrumb = document.getElementById('flashcardsBreadcrumb');
+  const flashcardsBody = document.getElementById('flashcardsBody');
+  const editModal = document.getElementById('editModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalForm = document.getElementById('modalForm');
   const quotesEditor = document.getElementById('quotesEditor');
   const quotesSave = document.getElementById('quotesSave');
   const quotesReset = document.getElementById('quotesReset');
@@ -860,6 +1154,15 @@
       state.exams = [];
     }
     try {
+      const rawSets = localStorage.getItem(FLASHCARDS_KEY);
+      if (rawSets) {
+        const parsed = JSON.parse(rawSets);
+        if (Array.isArray(parsed)) state.flashcardSets = parsed;
+      }
+    } catch (e) {
+      state.flashcardSets = [];
+    }
+    try {
       const rawQuotes = localStorage.getItem(QUOTES_KEY);
       if (rawQuotes) {
         const parsed = JSON.parse(rawQuotes);
@@ -873,6 +1176,7 @@
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.exams));
+    localStorage.setItem(FLASHCARDS_KEY, JSON.stringify(state.flashcardSets));
   }
 
   /* ===== Remote sync (JSONBin) ===== */
@@ -912,10 +1216,19 @@
         headers: { 'X-Access-Key': JSONBIN_KEY }
       });
       const record = (data && data.record) ? data.record : data;
+      let changed = false;
       if (record && Array.isArray(record.exams)) {
         state.exams = record.exams;
+        changed = true;
+      }
+      if (record && Array.isArray(record.flashcardSets)) {
+        state.flashcardSets = record.flashcardSets;
+        changed = true;
+      }
+      if (changed) {
         save();
         render();
+        renderFlashcards();
       }
       setSyncStatus('synced');
     } catch (e) {
@@ -938,7 +1251,7 @@
           'Content-Type': 'application/json',
           'X-Access-Key': JSONBIN_KEY
         },
-        body: JSON.stringify({ exams: state.exams })
+        body: JSON.stringify({ exams: state.exams, flashcardSets: state.flashcardSets })
       });
       setSyncStatus('synced');
     } catch (e) {
@@ -1178,18 +1491,24 @@
   /* ===== View switching ===== */
   const TAGLINES = {
     home: 'Stay calm. Stay prepared. Track every exam in one place.',
+    flashcards: 'Drill the things you keep forgetting.',
     settings: 'Add or remove exams from your revision hub.'
   };
 
   function showView(name) {
-    const isSettings = name === 'settings';
-    homeView.hidden = isSettings;
-    settingsView.hidden = !isSettings;
+    homeView.hidden = name !== 'home';
+    flashcardsView.hidden = name !== 'flashcards';
+    settingsView.hidden = name !== 'settings';
     pageTagline.textContent = TAGLINES[name] || TAGLINES.home;
     menuPanel.querySelectorAll('button').forEach(b => {
       b.classList.toggle('active', b.dataset.view === name);
     });
-    if (isSettings) showSubview('exams');
+    if (name === 'flashcards') {
+      flashcardsGoto({});
+    } else {
+      state.flashcardsNav.mode = null;
+    }
+    if (name === 'settings') showSubview('exams');
     closeMenu();
   }
 
@@ -1271,6 +1590,581 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeMenu();
   });
+
+  /* ===================================================================
+   * Flashcards
+   * =================================================================== */
+
+  function newId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function findSet(setId) {
+    return state.flashcardSets.find(s => s.id === setId) || null;
+  }
+  function findSubset(setId, subsetId) {
+    const s = findSet(setId);
+    if (!s || !Array.isArray(s.subsets)) return null;
+    return s.subsets.find(ss => ss.id === subsetId) || null;
+  }
+  function setHasCards(s) { return Array.isArray(s.cards) && s.cards.length > 0; }
+  function setHasSubsets(s) { return Array.isArray(s.subsets) && s.subsets.length > 0; }
+  function totalCardCount(s) {
+    if (!s) return 0;
+    if (setHasSubsets(s)) {
+      return s.subsets.reduce((acc, ss) => acc + (ss.cards ? ss.cards.length : 0), 0);
+    }
+    return s.cards ? s.cards.length : 0;
+  }
+
+  /* ----- Edit modal (reusable form) ----- */
+  let modalOnSave = null;
+
+  function openModal({ title, fields, onSave }) {
+    modalTitle.textContent = title;
+    modalForm.innerHTML = '';
+    fields.forEach(f => {
+      const label = document.createElement('label');
+      label.textContent = f.label;
+      const input = f.multiline
+        ? document.createElement('textarea')
+        : document.createElement('input');
+      if (!f.multiline) input.type = 'text';
+      input.name = f.name;
+      input.value = f.value || '';
+      if (f.placeholder) input.placeholder = f.placeholder;
+      if (f.required) input.required = true;
+      label.appendChild(input);
+      modalForm.appendChild(label);
+    });
+    modalOnSave = onSave;
+    editModal.hidden = false;
+    const first = modalForm.querySelector('input, textarea');
+    if (first) first.focus();
+  }
+
+  function closeModal() {
+    editModal.hidden = true;
+    modalForm.innerHTML = '';
+    modalOnSave = null;
+  }
+
+  function readModalValues() {
+    const values = {};
+    modalForm.querySelectorAll('input, textarea').forEach(el => {
+      values[el.name] = el.value.trim();
+    });
+    return values;
+  }
+
+  function modalSave() {
+    if (!modalOnSave) return;
+    const values = readModalValues();
+    const result = modalOnSave(values);
+    if (result === false) return; // validation failed
+    closeModal();
+  }
+
+  editModal.addEventListener('click', (e) => {
+    if (e.target === editModal) closeModal();
+    const act = e.target.closest('[data-modal-act]');
+    if (!act) return;
+    if (act.dataset.modalAct === 'cancel') closeModal();
+    else if (act.dataset.modalAct === 'save') modalSave();
+  });
+  modalForm.addEventListener('submit', (e) => { e.preventDefault(); modalSave(); });
+
+  /* ----- Password gate helper ----- */
+  function withPassword(action, label) {
+    const pwd = window.prompt(`Enter password to ${label}:`);
+    if (pwd === null) return false;
+    if (pwd !== SAVE_PASSWORD) {
+      window.alert('Incorrect password.');
+      return false;
+    }
+    action();
+    return true;
+  }
+
+  /* ----- CRUD ----- */
+  function addSet(name) {
+    state.flashcardSets.push({ id: newId(), name: name.trim(), subsets: [], cards: [] });
+    save(); pushRemote();
+  }
+  function updateSet(setId, name) {
+    const s = findSet(setId); if (!s) return;
+    s.name = name.trim(); save(); pushRemote();
+  }
+  function deleteSet(setId) {
+    state.flashcardSets = state.flashcardSets.filter(s => s.id !== setId);
+    save(); pushRemote();
+  }
+  function addSubset(setId, name) {
+    const s = findSet(setId); if (!s) return;
+    if (!Array.isArray(s.subsets)) s.subsets = [];
+    s.subsets.push({ id: newId(), name: name.trim(), cards: [] });
+    save(); pushRemote();
+  }
+  function updateSubset(setId, subsetId, name) {
+    const ss = findSubset(setId, subsetId); if (!ss) return;
+    ss.name = name.trim(); save(); pushRemote();
+  }
+  function deleteSubset(setId, subsetId) {
+    const s = findSet(setId); if (!s) return;
+    s.subsets = s.subsets.filter(ss => ss.id !== subsetId);
+    save(); pushRemote();
+  }
+  function addCard(setId, subsetId, front, back) {
+    const card = { id: newId(), front: front.trim(), back: back.trim() };
+    if (subsetId) {
+      const ss = findSubset(setId, subsetId); if (!ss) return;
+      if (!Array.isArray(ss.cards)) ss.cards = [];
+      ss.cards.push(card);
+    } else {
+      const s = findSet(setId); if (!s) return;
+      if (!Array.isArray(s.cards)) s.cards = [];
+      s.cards.push(card);
+    }
+    save(); pushRemote();
+  }
+  function updateCard(setId, subsetId, cardId, front, back) {
+    const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
+    if (!container || !Array.isArray(container.cards)) return;
+    const c = container.cards.find(x => x.id === cardId);
+    if (!c) return;
+    c.front = front.trim();
+    c.back = back.trim();
+    save(); pushRemote();
+  }
+  function deleteCard(setId, subsetId, cardId) {
+    const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
+    if (!container || !Array.isArray(container.cards)) return;
+    container.cards = container.cards.filter(c => c.id !== cardId);
+    save(); pushRemote();
+  }
+
+  /* ----- Navigation ----- */
+  function flashcardsGoto(nav) {
+    state.flashcardsNav = Object.assign(
+      { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null },
+      nav || {}
+    );
+    renderFlashcards();
+  }
+
+  function buildBreadcrumb() {
+    flashcardsBreadcrumb.innerHTML = '';
+    const nav = state.flashcardsNav;
+    const root = document.createElement('button');
+    root.type = 'button';
+    root.textContent = 'Flashcards';
+    root.addEventListener('click', () => flashcardsGoto({}));
+    flashcardsBreadcrumb.appendChild(root);
+
+    if (nav.setId) {
+      const sep1 = document.createElement('span'); sep1.className = 'crumb-sep'; sep1.textContent = '›';
+      flashcardsBreadcrumb.appendChild(sep1);
+      const s = findSet(nav.setId);
+      const setEl = document.createElement(nav.subsetId || nav.mode ? 'button' : 'span');
+      setEl.textContent = s ? s.name : 'Set';
+      if (setEl.tagName === 'BUTTON') {
+        setEl.type = 'button';
+        setEl.addEventListener('click', () => flashcardsGoto({ setId: nav.setId }));
+      } else {
+        setEl.className = 'crumb-current';
+      }
+      flashcardsBreadcrumb.appendChild(setEl);
+    }
+    if (nav.subsetId) {
+      const sep2 = document.createElement('span'); sep2.className = 'crumb-sep'; sep2.textContent = '›';
+      flashcardsBreadcrumb.appendChild(sep2);
+      const ss = findSubset(nav.setId, nav.subsetId);
+      const ssEl = document.createElement(nav.mode ? 'button' : 'span');
+      ssEl.textContent = ss ? ss.name : 'Subset';
+      if (ssEl.tagName === 'BUTTON') {
+        ssEl.type = 'button';
+        ssEl.addEventListener('click', () => flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId }));
+      } else {
+        ssEl.className = 'crumb-current';
+      }
+      flashcardsBreadcrumb.appendChild(ssEl);
+    }
+    if (nav.mode === 'review') {
+      const sep3 = document.createElement('span'); sep3.className = 'crumb-sep'; sep3.textContent = '›';
+      flashcardsBreadcrumb.appendChild(sep3);
+      const cur = document.createElement('span'); cur.className = 'crumb-current'; cur.textContent = 'Review';
+      flashcardsBreadcrumb.appendChild(cur);
+    }
+  }
+
+  /* ----- Render ----- */
+  function renderFlashcards() {
+    if (flashcardsView.hidden) return;
+    buildBreadcrumb();
+    const nav = state.flashcardsNav;
+    if (nav.mode === 'review') return renderReview();
+    if (nav.subsetId) return renderCardList(nav.setId, nav.subsetId);
+    if (nav.setId) return renderSetDetail(nav.setId);
+    return renderSetsList();
+  }
+
+  function renderSetsList() {
+    flashcardsBody.innerHTML = '';
+    const toolbar = document.createElement('div');
+    toolbar.className = 'fc-toolbar';
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-primary';
+    addBtn.textContent = '+ New set';
+    addBtn.addEventListener('click', () => promptSet());
+    toolbar.appendChild(addBtn);
+    flashcardsBody.appendChild(toolbar);
+
+    if (!state.flashcardSets.length) {
+      const empty = document.createElement('div');
+      empty.className = 'fc-empty';
+      empty.textContent = 'No flashcard sets yet. Create your first one above.';
+      flashcardsBody.appendChild(empty);
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'fc-list';
+    state.flashcardSets.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'fc-row';
+      row.innerHTML = `
+        <div class="fc-row-main">
+          <p class="fc-row-title"></p>
+          <div class="fc-row-meta"></div>
+        </div>
+        <div class="fc-row-actions">
+          <button class="icon-btn" data-act="edit" title="Rename">✎</button>
+          <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
+        </div>`;
+      row.querySelector('.fc-row-title').textContent = s.name;
+      const meta = setHasSubsets(s)
+        ? `${s.subsets.length} subset${s.subsets.length === 1 ? '' : 's'} · ${totalCardCount(s)} cards`
+        : `${(s.cards || []).length} card${(s.cards || []).length === 1 ? '' : 's'}`;
+      row.querySelector('.fc-row-meta').textContent = meta;
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('[data-act]')) return;
+        flashcardsGoto({ setId: s.id });
+      });
+      row.querySelector('[data-act="edit"]').addEventListener('click', () => promptSet(s));
+      row.querySelector('[data-act="delete"]').addEventListener('click', () => {
+        if (!window.confirm(`Delete the set "${s.name}" and everything in it?`)) return;
+        withPassword(() => { deleteSet(s.id); renderFlashcards(); }, 'delete this set');
+      });
+      list.appendChild(row);
+    });
+    flashcardsBody.appendChild(list);
+  }
+
+  function renderSetDetail(setId) {
+    const s = findSet(setId);
+    flashcardsBody.innerHTML = '';
+    if (!s) {
+      flashcardsGoto({});
+      return;
+    }
+    const toolbar = document.createElement('div');
+    toolbar.className = 'fc-toolbar';
+
+    const hasSubs = setHasSubsets(s);
+    const hasCards = setHasCards(s);
+
+    if (hasSubs || (!hasSubs && !hasCards)) {
+      const addSubBtn = document.createElement('button');
+      addSubBtn.className = 'btn-primary';
+      addSubBtn.textContent = '+ New subset';
+      addSubBtn.addEventListener('click', () => promptSubset(setId));
+      toolbar.appendChild(addSubBtn);
+    }
+    if (hasCards || (!hasSubs && !hasCards)) {
+      const addCardBtn = document.createElement('button');
+      addCardBtn.className = 'btn-primary';
+      addCardBtn.textContent = '+ New card';
+      addCardBtn.addEventListener('click', () => promptCard(setId, null));
+      toolbar.appendChild(addCardBtn);
+    }
+    if (hasCards) {
+      const reviewBtn = document.createElement('button');
+      reviewBtn.className = 'btn-primary';
+      reviewBtn.textContent = 'Review ▸';
+      reviewBtn.addEventListener('click', () => startReview(setId, null));
+      toolbar.appendChild(reviewBtn);
+    }
+    flashcardsBody.appendChild(toolbar);
+
+    if (hasSubs) {
+      const list = document.createElement('div');
+      list.className = 'fc-list';
+      s.subsets.forEach(ss => {
+        const row = document.createElement('div');
+        row.className = 'fc-row';
+        row.innerHTML = `
+          <div class="fc-row-main">
+            <p class="fc-row-title"></p>
+            <div class="fc-row-meta"></div>
+          </div>
+          <div class="fc-row-actions">
+            <button class="icon-btn" data-act="review" title="Review">▸</button>
+            <button class="icon-btn" data-act="edit" title="Rename">✎</button>
+            <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
+          </div>`;
+        row.querySelector('.fc-row-title').textContent = ss.name;
+        const cnt = (ss.cards || []).length;
+        row.querySelector('.fc-row-meta').textContent = `${cnt} card${cnt === 1 ? '' : 's'}`;
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('[data-act]')) return;
+          flashcardsGoto({ setId, subsetId: ss.id });
+        });
+        row.querySelector('[data-act="review"]').addEventListener('click', () => {
+          if (!cnt) { window.alert('No cards in this subset yet.'); return; }
+          startReview(setId, ss.id);
+        });
+        row.querySelector('[data-act="edit"]').addEventListener('click', () => promptSubset(setId, ss));
+        row.querySelector('[data-act="delete"]').addEventListener('click', () => {
+          if (!window.confirm(`Delete subset "${ss.name}" and its cards?`)) return;
+          withPassword(() => { deleteSubset(setId, ss.id); renderFlashcards(); }, 'delete this subset');
+        });
+        list.appendChild(row);
+      });
+      flashcardsBody.appendChild(list);
+    } else if (hasCards) {
+      renderCardListInto(flashcardsBody, setId, null, s.cards);
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'fc-empty';
+      empty.textContent = 'Empty set. Add a subset to organise into groups, or add a card directly.';
+      flashcardsBody.appendChild(empty);
+    }
+  }
+
+  function renderCardList(setId, subsetId) {
+    const ss = findSubset(setId, subsetId);
+    flashcardsBody.innerHTML = '';
+    if (!ss) {
+      flashcardsGoto({ setId });
+      return;
+    }
+    const toolbar = document.createElement('div');
+    toolbar.className = 'fc-toolbar';
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-primary';
+    addBtn.textContent = '+ New card';
+    addBtn.addEventListener('click', () => promptCard(setId, subsetId));
+    toolbar.appendChild(addBtn);
+    const cnt = (ss.cards || []).length;
+    if (cnt) {
+      const reviewBtn = document.createElement('button');
+      reviewBtn.className = 'btn-primary';
+      reviewBtn.textContent = 'Review ▸';
+      reviewBtn.addEventListener('click', () => startReview(setId, subsetId));
+      toolbar.appendChild(reviewBtn);
+    }
+    flashcardsBody.appendChild(toolbar);
+    renderCardListInto(flashcardsBody, setId, subsetId, ss.cards || []);
+  }
+
+  function renderCardListInto(container, setId, subsetId, cards) {
+    if (!cards.length) {
+      const empty = document.createElement('div');
+      empty.className = 'fc-empty';
+      empty.textContent = 'No cards yet. Add your first one above.';
+      container.appendChild(empty);
+      return;
+    }
+    const list = document.createElement('div');
+    list.className = 'fc-list';
+    cards.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'fc-row';
+      row.innerHTML = `
+        <div class="fc-row-main">
+          <p class="fc-row-title"></p>
+          <div class="fc-row-meta"></div>
+        </div>
+        <div class="fc-row-actions">
+          <button class="icon-btn" data-act="edit" title="Edit">✎</button>
+          <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
+        </div>`;
+      row.querySelector('.fc-row-title').textContent = c.front;
+      row.querySelector('.fc-row-meta').textContent = (c.back || '').slice(0, 80);
+      row.style.cursor = 'default';
+      row.querySelector('[data-act="edit"]').addEventListener('click', () => promptCard(setId, subsetId, c));
+      row.querySelector('[data-act="delete"]').addEventListener('click', () => {
+        if (!window.confirm(`Delete card "${c.front.slice(0, 40)}"?`)) return;
+        withPassword(() => { deleteCard(setId, subsetId, c.id); renderFlashcards(); }, 'delete this card');
+      });
+      list.appendChild(row);
+    });
+    container.appendChild(list);
+  }
+
+  function startReview(setId, subsetId) {
+    const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
+    const cards = (container && container.cards) ? container.cards : [];
+    if (!cards.length) { window.alert('No cards to review.'); return; }
+    const order = cards.map((_, i) => i);
+    flashcardsGoto({ setId, subsetId, mode: 'review', index: 0, flipped: false, order });
+  }
+
+  function reviewCards() {
+    const nav = state.flashcardsNav;
+    const container = nav.subsetId ? findSubset(nav.setId, nav.subsetId) : findSet(nav.setId);
+    return (container && container.cards) ? container.cards : [];
+  }
+
+  function renderReview() {
+    const nav = state.flashcardsNav;
+    const cards = reviewCards();
+    if (!cards.length || !nav.order || !nav.order.length) {
+      flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId });
+      return;
+    }
+    const safeIdx = Math.min(nav.index, nav.order.length - 1);
+    const card = cards[nav.order[safeIdx]];
+    if (!card) { flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId }); return; }
+
+    flashcardsBody.innerHTML = `
+      <div class="fc-review">
+        <div class="fc-position"></div>
+        <div class="flashcard" id="reviewCard" data-flipped="${nav.flipped ? 'true' : 'false'}" tabindex="0">
+          <div class="flashcard-inner">
+            <div class="flashcard-face front">
+              <span class="face-label">Front</span>
+              <div class="face-text"></div>
+            </div>
+            <div class="flashcard-face back">
+              <span class="face-label">Back</span>
+              <div class="face-text"></div>
+            </div>
+          </div>
+        </div>
+        <div class="fc-controls">
+          <button data-act="prev">‹ Prev</button>
+          <button data-act="flip">Flip</button>
+          <button data-act="next">Next ›</button>
+          <button data-act="shuffle">Shuffle</button>
+          <button data-act="edit">Edit</button>
+          <button data-act="delete">Delete</button>
+        </div>
+      </div>`;
+
+    flashcardsBody.querySelector('.fc-position').textContent = `Card ${safeIdx + 1} of ${nav.order.length}`;
+    flashcardsBody.querySelector('.flashcard-face.front .face-text').textContent = card.front;
+    flashcardsBody.querySelector('.flashcard-face.back .face-text').textContent = card.back || '(blank)';
+
+    const cardEl = flashcardsBody.querySelector('#reviewCard');
+    cardEl.addEventListener('click', flipReview);
+
+    flashcardsBody.querySelector('[data-act="prev"]').addEventListener('click', prevReview);
+    flashcardsBody.querySelector('[data-act="next"]').addEventListener('click', nextReview);
+    flashcardsBody.querySelector('[data-act="flip"]').addEventListener('click', flipReview);
+    flashcardsBody.querySelector('[data-act="shuffle"]').addEventListener('click', shuffleReview);
+    flashcardsBody.querySelector('[data-act="edit"]').addEventListener('click', () => {
+      promptCard(nav.setId, nav.subsetId, card);
+    });
+    flashcardsBody.querySelector('[data-act="delete"]').addEventListener('click', () => {
+      if (!window.confirm(`Delete card "${card.front.slice(0, 40)}"?`)) return;
+      withPassword(() => {
+        deleteCard(nav.setId, nav.subsetId, card.id);
+        const remaining = reviewCards();
+        if (!remaining.length) {
+          flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId });
+          return;
+        }
+        const newOrder = remaining.map((_, i) => i);
+        const newIdx = Math.min(nav.index, newOrder.length - 1);
+        flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId, mode: 'review', index: newIdx, flipped: false, order: newOrder });
+      }, 'delete this card');
+    });
+
+    cardEl.focus();
+  }
+
+  function flipReview() {
+    state.flashcardsNav.flipped = !state.flashcardsNav.flipped;
+    const cardEl = flashcardsBody.querySelector('#reviewCard');
+    if (cardEl) cardEl.dataset.flipped = state.flashcardsNav.flipped ? 'true' : 'false';
+  }
+  function prevReview() {
+    const nav = state.flashcardsNav;
+    nav.index = (nav.index - 1 + nav.order.length) % nav.order.length;
+    nav.flipped = false;
+    renderReview();
+  }
+  function nextReview() {
+    const nav = state.flashcardsNav;
+    nav.index = (nav.index + 1) % nav.order.length;
+    nav.flipped = false;
+    renderReview();
+  }
+  function shuffleReview() {
+    const nav = state.flashcardsNav;
+    nav.order = shuffle(nav.order.slice());
+    nav.index = 0;
+    nav.flipped = false;
+    renderReview();
+  }
+
+  /* Keyboard shortcuts active only while in review */
+  document.addEventListener('keydown', (e) => {
+    if (state.flashcardsNav.mode !== 'review') return;
+    if (!editModal.hidden) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevReview(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); nextReview(); }
+    else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipReview(); }
+  });
+
+  /* ----- Edit prompts ----- */
+  function promptSet(existing) {
+    openModal({
+      title: existing ? 'Rename set' : 'New set',
+      fields: [{ name: 'name', label: 'Name', value: existing ? existing.name : '', required: true, placeholder: 'e.g. Biology' }],
+      onSave: ({ name }) => {
+        if (!name) { window.alert('Name is required.'); return false; }
+        return withPassword(() => {
+          if (existing) updateSet(existing.id, name);
+          else addSet(name);
+          renderFlashcards();
+        }, existing ? 'rename this set' : 'save this set');
+      }
+    });
+  }
+  function promptSubset(setId, existing) {
+    openModal({
+      title: existing ? 'Rename subset' : 'New subset',
+      fields: [{ name: 'name', label: 'Name', value: existing ? existing.name : '', required: true, placeholder: 'e.g. Cells' }],
+      onSave: ({ name }) => {
+        if (!name) { window.alert('Name is required.'); return false; }
+        return withPassword(() => {
+          if (existing) updateSubset(setId, existing.id, name);
+          else addSubset(setId, name);
+          renderFlashcards();
+        }, existing ? 'rename this subset' : 'save this subset');
+      }
+    });
+  }
+  function promptCard(setId, subsetId, existing) {
+    openModal({
+      title: existing ? 'Edit card' : 'New card',
+      fields: [
+        { name: 'front', label: 'Front', value: existing ? existing.front : '', required: true, multiline: true, placeholder: 'Question or term' },
+        { name: 'back',  label: 'Back',  value: existing ? existing.back  : '', multiline: true, placeholder: 'Answer or definition' }
+      ],
+      onSave: ({ front, back }) => {
+        if (!front) { window.alert('Front is required.'); return false; }
+        return withPassword(() => {
+          if (existing) updateCard(setId, subsetId, existing.id, front, back);
+          else addCard(setId, subsetId, front, back);
+          renderFlashcards();
+        }, existing ? 'save card changes' : 'save this card');
+      }
+    });
+  }
 
   load();
   render();
