@@ -428,25 +428,71 @@
     pointer-events: none;
     border-radius: 1px;
   }
-  /* Peeling bottom-right corner — back-of-paper triangle with cast shadow */
+  /* Peeling bottom-right corner — curled triangle with curve shading + cast shadow */
   .exam-card::after {
     content: "";
     position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 36px;
-    height: 36px;
+    bottom: -3px;
+    right: -3px;
+    width: 62px;
+    height: 62px;
     background:
+      /* highlight at the curled tip, fading toward the crease */
+      radial-gradient(circle at 100% 100%,
+        rgba(255,255,255,0.55) 0%,
+        rgba(255,255,255,0.18) 18%,
+        transparent 38%),
+      /* dark sharp crease line, then a soft shadow band on the underside near the crease */
       linear-gradient(135deg,
-        transparent 0%,
-        transparent 49%,
-        rgba(0,0,0,0.18) 49.5%,
-        rgba(0,0,0,0.05) 51%,
-        var(--note-back) 51.2%,
-        var(--note-back) 100%);
-    filter: drop-shadow(-3px -3px 4px rgba(40,25,5,0.32));
+        transparent 46%,
+        rgba(0,0,0,0.45) 48.5%,
+        rgba(0,0,0,0.18) 50%,
+        rgba(0,0,0,0.05) 56%,
+        transparent 64%),
+      /* the back-of-paper colour */
+      var(--note-back);
+    clip-path: polygon(100% 0%, 100% 100%, 0% 100%);
+    filter:
+      drop-shadow(-4px -5px 6px rgba(40,25,5,0.45))
+      drop-shadow(-1px -1px 0 rgba(40,25,5,0.18));
     pointer-events: none;
-    border-radius: 0 0 1px 0;
+  }
+  /* Soft shadow ON the note where the curled corner overhangs */
+  .exam-card .peel-shadow {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 78px;
+    height: 78px;
+    pointer-events: none;
+    background: radial-gradient(circle at 100% 100%,
+      rgba(0,0,0,0.32) 0%,
+      rgba(0,0,0,0.14) 28%,
+      transparent 55%);
+    clip-path: polygon(0 100%, 100% 100%, 100% 0);
+    mix-blend-mode: multiply;
+  }
+  /* Mirror for left-side peel variants */
+  .exams .exam-card:nth-child(3n+2) .peel-shadow {
+    right: auto;
+    left: 0;
+    background: radial-gradient(circle at 0% 100%,
+      rgba(0,0,0,0.32) 0%,
+      rgba(0,0,0,0.14) 28%,
+      transparent 55%);
+    clip-path: polygon(0 0, 100% 100%, 0 100%);
+  }
+  /* Faint cast shadow on the cardboard along the lifted bottom edge */
+  .exam-card .bottom-lift {
+    position: absolute;
+    left: 4%;
+    right: 4%;
+    bottom: -8px;
+    height: 12px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.35), transparent 70%);
+    filter: blur(3px);
+    pointer-events: none;
+    z-index: -1;
   }
 
   /* Vary rotation, color, and which corner peels per card */
@@ -468,17 +514,23 @@
   /* Some cards peel the bottom-LEFT corner instead for variety */
   .exams .exam-card:nth-child(3n+2)::after {
     right: auto;
-    left: -2px;
+    left: -3px;
     background:
+      radial-gradient(circle at 0% 100%,
+        rgba(255,255,255,0.55) 0%,
+        rgba(255,255,255,0.18) 18%,
+        transparent 38%),
       linear-gradient(225deg,
-        transparent 0%,
-        transparent 49%,
-        rgba(0,0,0,0.18) 49.5%,
-        rgba(0,0,0,0.05) 51%,
-        var(--note-back) 51.2%,
-        var(--note-back) 100%);
-    filter: drop-shadow(3px -3px 4px rgba(40,25,5,0.32));
-    border-radius: 0 0 0 1px;
+        transparent 46%,
+        rgba(0,0,0,0.45) 48.5%,
+        rgba(0,0,0,0.18) 50%,
+        rgba(0,0,0,0.05) 56%,
+        transparent 64%),
+      var(--note-back);
+    clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
+    filter:
+      drop-shadow(4px -5px 6px rgba(40,25,5,0.45))
+      drop-shadow(1px -1px 0 rgba(40,25,5,0.18));
   }
 
   .exam-card:hover {
@@ -1292,6 +1344,8 @@
             <div class="time-unit"><span class="time-value" data-u="s">${pad(secs)}</span><div class="time-label">Secs</div></div>
           </div>
           <p class="quote"></p>
+          <span class="bottom-lift" aria-hidden="true"></span>
+          <span class="peel-shadow" aria-hidden="true"></span>
         `;
 
         card.querySelector('.subject').textContent = exam.subject;
