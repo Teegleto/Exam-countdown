@@ -107,49 +107,6 @@
     opacity: 1;
   }
 
-  /* Background decoration: a few minimal shapes drifting on the cardboard,
-     all wearing the same shadow stack so they belong with the UI */
-  .scraps { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
-  .scrap {
-    position: absolute;
-    will-change: transform;
-    box-shadow: var(--shadow-stack);
-  }
-  .scrap-a {
-    top: 9%; left: 4%;
-    width: 96px; height: 96px;
-    background: var(--ink);
-    animation: drift 18s ease-in-out infinite;
-  }
-  .scrap-b {
-    bottom: 12%; right: 6%;
-    width: 64px; height: 64px;
-    background: var(--coral);
-    border-radius: 50%;
-    animation: drift 21s ease-in-out infinite -5s;
-  }
-  .scrap-c {
-    top: 62%; left: 3%;
-    width: 140px; height: 22px;
-    background: var(--ink);
-    animation: drift 16s ease-in-out infinite -3s;
-  }
-  .scrap-d {
-    top: 22%; right: 7%;
-    width: 70px; height: 70px;
-    background: var(--paper);
-    animation: drift 24s ease-in-out infinite -8s;
-  }
-
-  @keyframes drift {
-    0%, 100% { transform: translate(0, 0) rotate(var(--rot, 0deg)); }
-    25%      { transform: translate(6px, -8px) rotate(calc(var(--rot, 0deg) + 1deg)); }
-    50%      { transform: translate(-4px, -2px) rotate(calc(var(--rot, 0deg) - 0.7deg)); }
-    75%      { transform: translate(-8px, 5px) rotate(calc(var(--rot, 0deg) + 0.4deg)); }
-  }
-  .scrap-c { --rot: -3deg; }
-  .scrap-d { --rot: 4deg; }
-
   main, header, .menu-btn, .menu-panel, .modal-overlay {
     position: relative;
     z-index: 2;
@@ -497,14 +454,6 @@
     }
     header { padding: 2rem 1rem 1rem; }
     main { padding: 0 0.85rem 2rem; }
-    .scrap-c { display: none; }
-    .scrap-a { width: 64px; height: 64px; }
-    .scrap-b { width: 48px; height: 48px; right: 4%; }
-    .scrap-d { width: 50px; height: 50px; right: 5%; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .scrap, .exam-card { animation: none !important; }
   }
 
   /* Menu button (top-right) */
@@ -776,12 +725,6 @@
 </style>
 </head>
 <body>
-  <div class="scraps" aria-hidden="true">
-    <div class="scrap scrap-a"></div>
-    <div class="scrap scrap-b"></div>
-    <div class="scrap scrap-c"></div>
-    <div class="scrap scrap-d"></div>
-  </div>
   <header>
     <h1 id="pageTitle">Revision Hub</h1>
     <p id="pageTagline">Stay calm. Stay prepared. Track every exam in one place.</p>
