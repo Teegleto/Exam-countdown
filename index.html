@@ -16,47 +16,51 @@
     --ink: #2a1f12;
     --ink-soft: #4a3a22;
     --muted: #8a6f48;
-
-    /* Sticky note pastels */
-    --note-yellow: #ffe680;
-    --note-yellow-back: #f0c54a;
-    --note-pink: #ffb8d6;
-    --note-pink-back: #e98aab;
-    --note-blue: #b8dcff;
-    --note-blue-back: #88b3dc;
-    --note-green: #c9eea0;
-    --note-green-back: #97c970;
-    --note-orange: #ffcb88;
-    --note-orange-back: #e89c4d;
-    --note-mint: #b6efd5;
-    --note-mint-back: #7fc4a6;
-
-    /* States */
-    --urgent-note: #ff8866;
-    --urgent-note-back: #cc5a3a;
-    --done-note: #d8d2c2;
-    --done-note-back: #a8a294;
     --done-text: #6e6553;
 
-    /* Accents (price tags) */
-    --tag-red: #d83838;
+    /* Accents */
     --teal: #4d8a87;
     --teal-deep: #3f6663;
     --coral: #c95c40;
+    --danger: #b53e2e;
 
-    /* Manila card paper (used for form, menu, settings — distinct from sticky notes) */
+    /* Cream paper used by every "lifted paper" surface */
     --paper: #f5ecd9;
     --paper-cool: #ece2cc;
-    --paper-warm: #f7e8c8;
-    --paper-stack:
-      2px 3px 5px rgba(40, 25, 5, 0.18),
-      10px 16px 22px rgba(40, 25, 5, 0.28);
 
-    --danger: #b53e2e;
-    --shadow-sm: 0 2px 6px rgba(40, 25, 5, 0.18);
-    --shadow: 0 8px 16px rgba(40, 25, 5, 0.28);
-    --shadow-lg: 0 20px 40px rgba(40, 25, 5, 0.4);
-    --radius: 2px;
+    /* Reusable layered offset shadow — lifted from the menu button.
+       Edge browns near the surface, coral peeking on the outer slabs,
+       a soft diffuse drop blur at the end. */
+    --shadow-stack:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge-soft),
+      3px 3px 0 var(--edge),
+      4px 4px 0 var(--edge),
+      5px 5px 0 var(--coral),
+      6px 6px 0 var(--coral),
+      8px 12px 14px rgba(40, 25, 5, 0.4);
+
+    --shadow-stack-lift:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge-soft),
+      3px 3px 0 var(--edge),
+      4px 4px 0 var(--edge),
+      5px 5px 0 var(--edge),
+      6px 6px 0 var(--coral),
+      7px 7px 0 var(--coral),
+      8px 8px 0 var(--coral),
+      12px 16px 18px rgba(40, 25, 5, 0.45);
+
+    --shadow-stack-press:
+      1px 1px 0 var(--edge),
+      2px 2px 0 var(--edge),
+      3px 3px 0 var(--coral),
+      4px 4px 0 var(--coral);
+
+    /* Single dark slab — used by elements that want a lighter weight (menu panel) */
+    --shadow-ink: 6px 6px 0 var(--ink);
+
+    --radius: 0px;
   }
 
   * { box-sizing: border-box; }
@@ -103,143 +107,55 @@
     opacity: 1;
   }
 
-  /* Price-tag stickers peeling off the cardboard */
+  /* Background decoration: a few minimal shapes drifting on the cardboard,
+     all wearing the same shadow stack so they belong with the UI */
   .scraps { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
   .scrap {
     position: absolute;
     will-change: transform;
-    background: #fdfaf2;
-    color: var(--tag-red);
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 800;
-    border: 2px solid var(--tag-red);
-    border-radius: 2px;
-    box-shadow:
-      0 1px 2px rgba(40, 25, 5, 0.18),
-      6px 12px 14px rgba(40, 25, 5, 0.28);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    text-align: center;
-    padding: 4px 8px;
-    letter-spacing: -0.02em;
+    box-shadow: var(--shadow-stack);
   }
-  /* Peeling corner on each sticker */
-  .scrap::after {
-    content: "";
-    position: absolute;
-    bottom: -1px;
-    right: -1px;
-    width: 18px;
-    height: 18px;
-    background:
-      linear-gradient(135deg,
-        transparent 50%,
-        #f5eddb 50%,
-        #efe2c4 78%,
-        #d8c7a1 100%);
-    border-right: 2px solid var(--tag-red);
-    border-bottom: 2px solid var(--tag-red);
-    box-sizing: border-box;
-    filter: drop-shadow(-1px -1px 1.5px rgba(0,0,0,0.35));
-    transform-origin: bottom right;
+  .scrap-a {
+    top: 9%; left: 4%;
+    width: 96px; height: 96px;
+    background: var(--ink);
+    animation: drift 18s ease-in-out infinite;
   }
-  /* The dark gap revealed by the peel */
-  .scrap::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 18px;
-    height: 18px;
-    background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.18) 52%, rgba(0,0,0,0.05) 70%, transparent 100%);
-    pointer-events: none;
-  }
-
-  .scrap-a { /* "$1.99" tag */
-    top: 6%; left: 3.5%;
-    width: 90px; height: 56px;
-    font-size: 1.4rem;
-    transform: rotate(-9deg);
-    animation: drift 14s ease-in-out infinite;
-  }
-  .scrap-b { /* round "SALE" badge */
-    top: 14%; right: 5%;
-    width: 86px; height: 86px;
-    border-radius: 50%;
-    font-size: 1.05rem;
-    background: var(--tag-red);
-    color: #fff8e6;
-    transform: rotate(8deg);
-    animation: drift 17s ease-in-out infinite -3s;
-  }
-  .scrap-b::after { border-color: var(--tag-red); }
-  .scrap-c { /* "50% OFF" tag */
-    top: 60%; left: 3%;
-    width: 96px; height: 50px;
-    font-size: 0.95rem;
-    transform: rotate(6deg);
-    animation: drift 19s ease-in-out infinite -6s;
-  }
-  .scrap-d { /* small "NEW" sticker */
-    top: 40%; right: 4%;
+  .scrap-b {
+    bottom: 12%; right: 6%;
     width: 64px; height: 64px;
+    background: var(--coral);
     border-radius: 50%;
-    font-size: 0.8rem;
-    background: #fff7d6;
-    color: var(--ink);
-    border-color: var(--ink);
-    transform: rotate(-12deg);
-    animation: drift 21s ease-in-out infinite -2s;
+    animation: drift 21s ease-in-out infinite -5s;
   }
-  .scrap-d::after { border-color: var(--ink); }
-  .scrap-e { /* "£3" tag */
-    bottom: 12%; right: 8%;
-    width: 70px; height: 46px;
-    font-size: 1.1rem;
-    transform: rotate(11deg);
-    animation: drift 16s ease-in-out infinite -9s;
+  .scrap-c {
+    top: 62%; left: 3%;
+    width: 140px; height: 22px;
+    background: var(--ink);
+    animation: drift 16s ease-in-out infinite -3s;
   }
-  .scrap-f { /* "BUY 1 GET 1" tag */
-    bottom: 20%; left: 10%;
-    width: 130px; height: 38px;
-    font-size: 0.7rem;
-    letter-spacing: 0.02em;
-    transform: rotate(-7deg);
-    animation: drift 22s ease-in-out infinite -7s;
-  }
-  .scrap-g { /* small dot price tag */
-    top: 78%; left: 52%;
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    font-size: 0.85rem;
-    background: #fff8e6;
-    color: var(--tag-red);
-    transform: rotate(-14deg);
-    animation: drift 18s ease-in-out infinite -4s;
+  .scrap-d {
+    top: 22%; right: 7%;
+    width: 70px; height: 70px;
+    background: var(--paper);
+    animation: drift 24s ease-in-out infinite -8s;
   }
 
   @keyframes drift {
     0%, 100% { transform: translate(0, 0) rotate(var(--rot, 0deg)); }
-    25%      { transform: translate(6px, -8px) rotate(calc(var(--rot, 0deg) + 1.2deg)); }
-    50%      { transform: translate(-4px, -2px) rotate(calc(var(--rot, 0deg) - 0.8deg)); }
-    75%      { transform: translate(-8px, 5px) rotate(calc(var(--rot, 0deg) + 0.5deg)); }
+    25%      { transform: translate(6px, -8px) rotate(calc(var(--rot, 0deg) + 1deg)); }
+    50%      { transform: translate(-4px, -2px) rotate(calc(var(--rot, 0deg) - 0.7deg)); }
+    75%      { transform: translate(-8px, 5px) rotate(calc(var(--rot, 0deg) + 0.4deg)); }
   }
-  .scrap-a { --rot: -9deg; }
-  .scrap-b { --rot: 8deg; }
-  .scrap-c { --rot: 6deg; }
-  .scrap-d { --rot: -12deg; }
-  .scrap-e { --rot: 11deg; }
-  .scrap-f { --rot: -7deg; }
-  .scrap-g { --rot: -14deg; }
+  .scrap-c { --rot: -3deg; }
+  .scrap-d { --rot: 4deg; }
 
   main, header, .menu-btn, .menu-panel, .modal-overlay {
     position: relative;
     z-index: 2;
   }
 
-  main { perspective: 1400px; }
+  main { }
 
   header {
     text-align: center;
@@ -297,75 +213,83 @@
 
   .add-form {
     background: var(--paper);
-    padding: 1.25rem;
+    padding: 1.5rem;
+    border: 1.5px solid var(--ink);
     border-radius: var(--radius);
-    box-shadow: var(--paper-stack);
+    box-shadow: var(--shadow-stack);
     display: grid;
     grid-template-columns: 1.6fr 1fr 1fr 1fr auto;
-    gap: 0.75rem;
+    gap: 0.85rem;
     align-items: end;
     margin-bottom: 2.5rem;
-    transform: rotate(-0.6deg);
     position: relative;
-  }
-  .add-form::before {
-    content: "";
-    position: absolute;
-    top: -10px; left: 22px;
-    width: 110px; height: 22px;
-    background: rgba(95,155,154,0.55);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    transform: rotate(-3deg);
-    border-radius: 1px;
   }
 
   .add-form label {
     display: flex;
     flex-direction: column;
     font-size: 0.72rem;
-    color: var(--ink-soft);
-    font-weight: 600;
-    gap: 0.35rem;
+    color: var(--ink);
+    font-weight: 700;
+    gap: 0.4rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
   }
 
   .add-form input {
-    padding: 0.6rem 0.7rem;
+    padding: 0.65rem 0.75rem;
     border: 1.5px solid var(--ink);
     border-radius: 0;
     font-size: 0.95rem;
     color: var(--ink);
-    background: rgba(255,255,255,0.6);
+    background: #fff;
     font-family: inherit;
-    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    transition: box-shadow 0.12s, transform 0.12s;
   }
 
   .add-form input:focus {
     outline: none;
-    background: white;
+    transform: translate(-1px, -1px);
     box-shadow: 3px 3px 0 var(--coral);
   }
 
   .add-form button {
-    padding: 0.7rem 1.25rem;
+    padding: 0.75rem 1.4rem;
     background: var(--ink);
     color: var(--paper);
     border: none;
     border-radius: 0;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     transition: transform 0.1s, box-shadow 0.1s;
     font-family: inherit;
     height: fit-content;
-    box-shadow: 4px 4px 0 var(--coral);
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge-soft),
+      3px 3px 0 var(--edge),
+      4px 4px 0 var(--coral),
+      5px 5px 0 var(--coral);
   }
 
-  .add-form button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--coral); }
-  .add-form button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--coral); }
+  .add-form button:hover {
+    transform: translate(-2px, -2px);
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge),
+      3px 3px 0 var(--edge),
+      4px 4px 0 var(--coral),
+      5px 5px 0 var(--coral),
+      6px 6px 0 var(--coral),
+      7px 7px 0 var(--coral);
+  }
+  .add-form button:active {
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow-stack-press);
+  }
 
   .exams {
     display: grid;
@@ -377,183 +301,62 @@
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem 1rem;
-    color: var(--muted);
+    color: var(--ink-soft);
     background: var(--paper);
+    border: 1.5px solid var(--ink);
     border-radius: var(--radius);
-    border: 2px dashed rgba(28,35,49,0.25);
-    box-shadow: var(--paper-stack);
-    transform: rotate(-0.4deg);
+    box-shadow: var(--shadow-stack);
     font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
   }
 
-  /* Sticky note exam cards */
+  /* Editorial paper card — same shadow stack as the menu button */
   .exam-card {
-    --rot: 0deg;
-    --tilt-x: 0deg;
-    --tilt-y: 0deg;
-    --lift: 0px;
-    --note: var(--note-yellow);
-    --note-back: var(--note-yellow-back);
-    background:
-      /* very subtle paper grain */
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' stitchTiles='stitch' seed='3'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>") 0 0 / 180px 180px,
-      /* faint top-light shading */
-      linear-gradient(170deg, rgba(255,255,255,0.45) 0%, transparent 35%, transparent 70%, rgba(0,0,0,0.06) 100%),
-      var(--note);
-    background-blend-mode: multiply, normal, normal;
-    border-radius: 1px;
-    padding: 1.4rem 1.25rem 1.4rem;
-    /* The "stuck" top edge has a tighter shadow; the "lifted" bottom-right has a longer one */
-    box-shadow:
-      0 1px 1px rgba(0,0,0,0.05),
-      2px 3px 4px rgba(40,25,5,0.15),
-      14px 20px 24px -6px rgba(40,25,5,0.42);
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 1.4rem 1.5rem 1.4rem;
+    box-shadow: var(--shadow-stack);
     display: flex;
     flex-direction: column;
     position: relative;
-    transform: translate3d(0, var(--lift), 0) rotate(var(--rot)) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
-    transform-style: preserve-3d;
-    transition: transform 0.18s ease, box-shadow 0.25s ease;
+    transition: transform 0.12s, box-shadow 0.12s;
     will-change: transform;
   }
-  /* Adhesive strip running along the top — slightly translucent darker band */
-  .exam-card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 8%;
-    right: 8%;
-    height: 14px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0));
-    pointer-events: none;
-    border-radius: 1px;
-  }
-  /* Peeling bottom-right corner — curled triangle with curve shading + cast shadow */
-  .exam-card::after {
-    content: "";
-    position: absolute;
-    bottom: -3px;
-    right: -3px;
-    width: 62px;
-    height: 62px;
-    background:
-      /* highlight at the curled tip, fading toward the crease */
-      radial-gradient(circle at 100% 100%,
-        rgba(255,255,255,0.55) 0%,
-        rgba(255,255,255,0.18) 18%,
-        transparent 38%),
-      /* dark sharp crease line, then a soft shadow band on the underside near the crease */
-      linear-gradient(135deg,
-        transparent 46%,
-        rgba(0,0,0,0.45) 48.5%,
-        rgba(0,0,0,0.18) 50%,
-        rgba(0,0,0,0.05) 56%,
-        transparent 64%),
-      /* the back-of-paper colour */
-      var(--note-back);
-    clip-path: polygon(100% 0%, 100% 100%, 0% 100%);
-    filter:
-      drop-shadow(-4px -5px 6px rgba(40,25,5,0.45))
-      drop-shadow(-1px -1px 0 rgba(40,25,5,0.18));
-    pointer-events: none;
-  }
-  /* Soft shadow ON the note where the curled corner overhangs */
-  .exam-card .peel-shadow {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 78px;
-    height: 78px;
-    pointer-events: none;
-    background: radial-gradient(circle at 100% 100%,
-      rgba(0,0,0,0.32) 0%,
-      rgba(0,0,0,0.14) 28%,
-      transparent 55%);
-    clip-path: polygon(0 100%, 100% 100%, 100% 0);
-    mix-blend-mode: multiply;
-  }
-  /* Mirror for left-side peel variants */
-  .exams .exam-card:nth-child(3n+2) .peel-shadow {
-    right: auto;
-    left: 0;
-    background: radial-gradient(circle at 0% 100%,
-      rgba(0,0,0,0.32) 0%,
-      rgba(0,0,0,0.14) 28%,
-      transparent 55%);
-    clip-path: polygon(0 0, 100% 100%, 0 100%);
-  }
-  /* Faint cast shadow on the cardboard along the lifted bottom edge */
-  .exam-card .bottom-lift {
-    position: absolute;
-    left: 4%;
-    right: 4%;
-    bottom: -8px;
-    height: 12px;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,0.35), transparent 70%);
-    filter: blur(3px);
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  /* Vary rotation, color, and which corner peels per card */
-  .exams .exam-card:nth-child(7n+1) { --rot: -2.2deg; }
-  .exams .exam-card:nth-child(7n+2) { --rot:  1.6deg; }
-  .exams .exam-card:nth-child(7n+3) { --rot: -1.1deg; }
-  .exams .exam-card:nth-child(7n+4) { --rot:  2.4deg; }
-  .exams .exam-card:nth-child(7n+5) { --rot: -1.6deg; }
-  .exams .exam-card:nth-child(7n+6) { --rot:  0.8deg; }
-  .exams .exam-card:nth-child(7n+7) { --rot: -2.6deg; }
-
-  .exams .exam-card:nth-child(6n+1) { --note: var(--note-yellow); --note-back: var(--note-yellow-back); }
-  .exams .exam-card:nth-child(6n+2) { --note: var(--note-pink);   --note-back: var(--note-pink-back); }
-  .exams .exam-card:nth-child(6n+3) { --note: var(--note-blue);   --note-back: var(--note-blue-back); }
-  .exams .exam-card:nth-child(6n+4) { --note: var(--note-green);  --note-back: var(--note-green-back); }
-  .exams .exam-card:nth-child(6n+5) { --note: var(--note-orange); --note-back: var(--note-orange-back); }
-  .exams .exam-card:nth-child(6n+6) { --note: var(--note-mint);   --note-back: var(--note-mint-back); }
-
-  /* Some cards peel the bottom-LEFT corner instead for variety */
-  .exams .exam-card:nth-child(3n+2)::after {
-    right: auto;
-    left: -3px;
-    background:
-      radial-gradient(circle at 0% 100%,
-        rgba(255,255,255,0.55) 0%,
-        rgba(255,255,255,0.18) 18%,
-        transparent 38%),
-      linear-gradient(225deg,
-        transparent 46%,
-        rgba(0,0,0,0.45) 48.5%,
-        rgba(0,0,0,0.18) 50%,
-        rgba(0,0,0,0.05) 56%,
-        transparent 64%),
-      var(--note-back);
-    clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
-    filter:
-      drop-shadow(4px -5px 6px rgba(40,25,5,0.45))
-      drop-shadow(1px -1px 0 rgba(40,25,5,0.18));
-  }
-
   .exam-card:hover {
-    --lift: -6px;
-    box-shadow:
-      0 1px 1px rgba(0,0,0,0.05),
-      4px 5px 8px rgba(40,25,5,0.18),
-      22px 32px 38px -8px rgba(40,25,5,0.5);
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-stack-lift);
     z-index: 5;
   }
 
+  /* Urgent — inverts to ink slab with cream text, like the active HOME tab */
   .exam-card.urgent {
-    --note: var(--urgent-note);
-    --note-back: var(--urgent-note-back);
+    background: var(--ink);
+    color: var(--paper);
   }
+  .exam-card.urgent .subject,
+  .exam-card.urgent .exam-date,
+  .exam-card.urgent .exam-duration,
+  .exam-card.urgent .quote {
+    color: var(--paper);
+  }
+  .exam-card.urgent .quote { border-top-color: rgba(245,236,217,0.25); }
+
+  /* Done — keeps the cream sheet but greys it out */
   .exam-card.done {
-    --note: var(--done-note);
-    --note-back: var(--done-note-back);
-    color: var(--done-text);
+    background: var(--paper-cool);
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge-soft),
+      3px 3px 0 var(--edge),
+      4px 4px 0 var(--edge),
+      6px 8px 12px rgba(40, 25, 5, 0.3);
+    filter: grayscale(0.55);
   }
   .exam-card.done .subject,
   .exam-card.done .exam-date,
   .exam-card.done .countdown,
+  .exam-card.done .exam-duration,
   .exam-card.done .quote {
     color: var(--done-text);
   }
@@ -616,33 +419,32 @@
     letter-spacing: 0.06em;
   }
 
-  .exam-card.urgent .exam-duration { color: var(--ink); opacity: 0.85; }
-  .exam-card.done .exam-duration { color: var(--done-text); }
-
   .countdown {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.4rem;
+    gap: 0.45rem;
     margin-bottom: 1rem;
   }
 
   .time-unit {
-    background: rgba(0,0,0,0.07);
-    color: var(--ink);
-    border-radius: 2px;
-    padding: 0.55rem 0.25rem;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 0;
+    padding: 0.6rem 0.25rem;
     text-align: center;
-    border: 1px dashed rgba(0,0,0,0.18);
+    box-shadow: 3px 3px 0 var(--coral);
   }
 
   .exam-card.urgent .time-unit {
-    background: rgba(0,0,0,0.12);
-    border-color: rgba(0,0,0,0.3);
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--coral);
   }
 
   .exam-card.done .time-unit {
-    background: rgba(0,0,0,0.05);
-    border-color: rgba(0,0,0,0.15);
+    background: var(--ink-soft);
+    color: var(--paper-cool);
+    box-shadow: 2px 2px 0 var(--edge);
   }
 
   .time-value {
@@ -658,25 +460,24 @@
     font-size: 0.6rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--ink-soft);
-    opacity: 0.75;
+    opacity: 0.7;
     margin-top: 0.2rem;
   }
-  .exam-card.done .time-label { color: var(--done-text); opacity: 0.7; }
 
   .done-badge {
     display: inline-block;
-    font-size: 0.65rem;
-    padding: 0.2rem 0.55rem;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
     background: var(--ink);
     color: var(--paper);
     border-radius: 0;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
-    font-weight: 700;
+    letter-spacing: 0.18em;
+    font-weight: 800;
     margin-bottom: 0.75rem;
-    transform: rotate(-2deg);
+    box-shadow: 2px 2px 0 var(--coral);
   }
+  .exam-card.urgent .done-badge { background: var(--paper); color: var(--ink); }
 
   .quote {
     margin-top: auto;
@@ -696,11 +497,10 @@
     }
     header { padding: 2rem 1rem 1rem; }
     main { padding: 0 0.85rem 2rem; }
-    .scrap-a, .scrap-c, .scrap-f { display: none; }
-    .scrap-b { width: 64px; height: 64px; right: 4%; top: 12%; font-size: 0.85rem; }
-    .scrap-d { width: 50px; height: 50px; font-size: 0.7rem; }
-    .scrap-e { width: 56px; height: 36px; font-size: 0.9rem; }
-    .scrap-g { width: 44px; height: 44px; font-size: 0.7rem; }
+    .scrap-c { display: none; }
+    .scrap-a { width: 64px; height: 64px; }
+    .scrap-b { width: 48px; height: 48px; right: 4%; }
+    .scrap-d { width: 50px; height: 50px; right: 5%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -830,19 +630,18 @@
 
   .settings-row {
     background: var(--paper);
+    border: 1.5px solid var(--ink);
     border-radius: var(--radius);
-    padding: 0.95rem 1.1rem;
-    box-shadow: var(--paper-stack);
+    padding: 1rem 1.15rem;
+    box-shadow: var(--shadow-stack);
     display: flex;
     align-items: center;
     gap: 0.85rem;
-    transform: rotate(-0.3deg);
-    transition: transform 0.2s;
+    transition: transform 0.12s, box-shadow 0.12s;
   }
-  .settings-row:nth-child(odd) { transform: rotate(0.4deg); background: var(--paper-cool); }
-  .settings-row:hover { transform: rotate(0deg) translateY(-2px); }
+  .settings-row:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-stack-lift); }
 
-  .settings-row.done { opacity: 0.55; }
+  .settings-row.done { opacity: 0.6; filter: grayscale(0.45); }
 
   .settings-row-main {
     flex: 1;
@@ -877,10 +676,9 @@
     padding: 0;
     border: 1.5px solid var(--ink);
     border-radius: 0;
-    box-shadow: 4px 4px 0 var(--ink);
-    margin-bottom: 2rem;
+    box-shadow: var(--shadow-stack);
+    margin-bottom: 2.5rem;
     width: fit-content;
-    transform: rotate(-0.5deg);
   }
 
   .settings-tabs button {
@@ -929,53 +727,60 @@
     background: var(--paper);
     line-height: 1.6;
     resize: vertical;
-    box-shadow: 5px 5px 0 var(--ink);
-    transition: box-shadow 0.15s;
+    box-shadow: var(--shadow-stack);
+    transition: box-shadow 0.12s, transform 0.12s;
   }
 
   .quotes-editor:focus {
     outline: none;
-    box-shadow: 6px 6px 0 var(--coral);
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-stack-lift);
   }
 
   .quotes-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.7rem;
-    margin-top: 1.1rem;
+    gap: 0.85rem;
+    margin-top: 1.25rem;
     flex-wrap: wrap;
   }
 
   .quotes-actions button {
-    padding: 0.7rem 1.3rem;
+    padding: 0.75rem 1.35rem;
     border-radius: 0;
     border: 1.5px solid var(--ink);
     font-family: inherit;
     font-size: 0.82rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     cursor: pointer;
     transition: transform 0.1s, box-shadow 0.1s;
   }
 
-  .btn-primary { background: var(--ink); color: var(--paper); box-shadow: 4px 4px 0 var(--coral); }
-  .btn-primary:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--coral); }
-  .btn-primary:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--coral); }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge),
+      3px 3px 0 var(--coral),
+      4px 4px 0 var(--coral),
+      5px 5px 0 var(--coral);
+  }
+  .btn-primary:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-stack-lift); }
+  .btn-primary:active { transform: translate(2px, 2px); box-shadow: var(--shadow-stack-press); }
 
-  .btn-ghost { background: transparent; color: var(--danger); border-color: var(--danger); }
-  .btn-ghost:hover { background: rgba(200,84,71,0.1); }
+  .btn-ghost { background: var(--paper); color: var(--danger); border-color: var(--danger); }
+  .btn-ghost:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--danger); }
 </style>
 </head>
 <body>
   <div class="scraps" aria-hidden="true">
-    <div class="scrap scrap-a"><span>$1.99</span></div>
-    <div class="scrap scrap-b"><span>SALE</span></div>
-    <div class="scrap scrap-c"><span>50% OFF</span></div>
-    <div class="scrap scrap-d"><span>NEW</span></div>
-    <div class="scrap scrap-e"><span>£3</span></div>
-    <div class="scrap scrap-f"><span>BUY 1 GET 1</span></div>
-    <div class="scrap scrap-g"><span>2&nbsp;FOR&nbsp;1</span></div>
+    <div class="scrap scrap-a"></div>
+    <div class="scrap scrap-b"></div>
+    <div class="scrap scrap-c"></div>
+    <div class="scrap scrap-d"></div>
   </div>
   <header>
     <h1 id="pageTitle">Revision Hub</h1>
@@ -1235,27 +1040,6 @@
 
   function pad(n) { return String(n).padStart(2, '0'); }
 
-  function attachCardTilt(card) {
-    let frame = 0;
-    function onMove(e) {
-      const rect = card.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width - 0.5;
-      const py = (e.clientY - rect.top) / rect.height - 0.5;
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        card.style.setProperty('--tilt-y', (px * 14).toFixed(2) + 'deg');
-        card.style.setProperty('--tilt-x', (-py * 12).toFixed(2) + 'deg');
-      });
-    }
-    function onLeave() {
-      cancelAnimationFrame(frame);
-      card.style.setProperty('--tilt-x', '0deg');
-      card.style.setProperty('--tilt-y', '0deg');
-    }
-    card.addEventListener('mousemove', onMove);
-    card.addEventListener('mouseleave', onLeave);
-  }
-
   function formatDuration(mins) {
     if (!mins || mins <= 0) return '';
     const h = Math.floor(mins / 60);
@@ -1344,8 +1128,6 @@
             <div class="time-unit"><span class="time-value" data-u="s">${pad(secs)}</span><div class="time-label">Secs</div></div>
           </div>
           <p class="quote"></p>
-          <span class="bottom-lift" aria-hidden="true"></span>
-          <span class="peel-shadow" aria-hidden="true"></span>
         `;
 
         card.querySelector('.subject').textContent = exam.subject;
@@ -1355,7 +1137,6 @@
           if (finishStr) card.querySelector('.finish-value').textContent = finishStr;
         }
         card.querySelector('.quote').textContent = '“' + quoteForIndex(i) + '”';
-        attachCardTilt(card);
 
         examsList.appendChild(card);
       });
