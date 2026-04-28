@@ -22,7 +22,16 @@
     --teal: #4d8a87;
     --teal-deep: #3f6663;
     --coral: #c95c40;
+    --mustard: #c89a3f;
+    --plum: #704c5e;
     --danger: #b53e2e;
+
+    /* Event colour palette (the five swatches) */
+    --cal-ink: var(--ink);
+    --cal-coral: var(--coral);
+    --cal-teal: var(--teal);
+    --cal-mustard: var(--mustard);
+    --cal-plum: var(--plum);
 
     /* Cream paper used by every "lifted paper" surface */
     --paper: #f5ecd9;
@@ -753,8 +762,31 @@
     align-items: center;
     margin-bottom: 1.4rem;
     flex-wrap: wrap;
-    gap: 0.85rem;
+    gap: 0.85rem 1.2rem;
   }
+  .cal-mode-switch {
+    display: flex;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    width: fit-content;
+  }
+  .cal-mode-switch button {
+    background: transparent;
+    border: none;
+    padding: 0.55rem 1.05rem;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .cal-mode-switch button + button { border-left: 1.5px solid var(--ink); }
+  .cal-mode-switch button:hover { background: rgba(28,31,18,0.07); color: var(--ink); }
+  .cal-mode-switch button.active { background: var(--ink); color: var(--paper); }
   .calendar-title {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 1.6rem;
@@ -801,8 +833,8 @@
     letter-spacing: 0.14em;
   }
   .calendar-cell {
-    padding: 0.45rem 0.5rem 0.5rem;
-    min-height: 78px;
+    padding: 0.4rem 0.45rem 0.45rem;
+    height: 118px;
     border-right: 1px solid rgba(42,31,18,0.18);
     border-bottom: 1px solid rgba(42,31,18,0.18);
     cursor: pointer;
@@ -811,16 +843,22 @@
     flex-direction: column;
     position: relative;
     transition: background 0.1s, color 0.1s;
+    overflow: hidden;
   }
   .calendar-cell:nth-child(7n+7) { border-right: none; }
   .calendar-grid > .calendar-cell:nth-last-child(-n+7) { border-bottom: none; }
   .calendar-cell:hover { background: rgba(42,31,18,0.08); }
   .calendar-cell.muted { color: var(--muted); background: rgba(0,0,0,0.04); }
   .calendar-cell.muted:hover { background: rgba(0,0,0,0.08); }
+  .calendar-cell .cal-cell-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
   .calendar-cell .day-num {
     font-weight: 800;
     font-size: 0.82rem;
-    align-self: flex-end;
     padding: 0.1rem 0.35rem;
     line-height: 1;
     border-radius: 0;
@@ -837,20 +875,46 @@
   .calendar-cell.selected:hover { background: var(--ink); }
   .calendar-cell.selected .day-num { color: var(--paper); background: transparent; }
   .calendar-cell.selected.today .day-num { background: var(--coral); color: var(--paper); }
-  .calendar-cell .event-dots {
+
+  .cal-cell-events {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    margin-top: auto;
-    padding-top: 0.3rem;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 1px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--edge) transparent;
   }
-  .calendar-cell .event-dot {
+  .cal-cell-events::-webkit-scrollbar { width: 4px; }
+  .cal-cell-events::-webkit-scrollbar-thumb { background: var(--edge); }
+  .cal-cell-events::-webkit-scrollbar-track { background: transparent; }
+
+  .cal-cell-event {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.15;
+    min-height: 14px;
+  }
+  .cal-cell-event .event-dot {
     width: 7px; height: 7px;
-    background: var(--ink);
+    background: var(--ev-color, var(--ink));
     border-radius: 50%;
+    flex-shrink: 0;
   }
-  .calendar-cell.selected .event-dot { background: var(--paper); }
-  .calendar-cell .event-dot.exam { background: var(--coral); }
+  .cal-cell-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .calendar-cell.selected .cal-cell-event { color: var(--paper); }
+  .calendar-cell.selected .cal-cell-event .event-dot { box-shadow: 0 0 0 1px var(--paper); }
 
   .calendar-day-panel {
     background: var(--paper);
@@ -934,6 +998,230 @@
   }
   .calendar-event-actions .icon-btn:hover { color: var(--ink); background: rgba(28,31,18,0.07); }
   .calendar-event-actions .icon-btn.danger:hover { color: var(--danger); background: rgba(200,84,71,0.12); }
+
+  /* Coloured dot on event row + the row's coral shadow tinted by colour */
+  .calendar-event-row { box-shadow: 3px 3px 0 var(--ev-color, var(--coral)); position: relative; }
+  .calendar-event-row::before {
+    content: "";
+    width: 10px; height: 10px;
+    background: var(--ev-color, var(--ink));
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .calendar-event-row.exam::before { background: var(--coral); }
+
+  /* ---- Year view: 12 mini month grids ---- */
+  .calendar-grid.year-mode {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  .cal-mini-month {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    padding: 0.7rem 0.7rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+  }
+  .cal-mini-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    align-self: flex-start;
+  }
+  .cal-mini-title:hover { color: var(--coral); }
+  .cal-mini-dow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    font-size: 0.55rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-bottom: 0.2rem;
+  }
+  .cal-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+  }
+  .cal-mini-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    position: relative;
+    border-radius: 0;
+  }
+  .cal-mini-cell:hover { background: rgba(42,31,18,0.1); }
+  .cal-mini-cell.muted { color: rgba(0,0,0,0.18); }
+  .cal-mini-cell.today {
+    background: var(--coral);
+    color: var(--paper);
+    font-weight: 800;
+  }
+  .cal-mini-cell.has-events::after {
+    content: "";
+    position: absolute;
+    bottom: 1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 4px;
+    background: var(--dot-color, var(--ink));
+    border-radius: 50%;
+  }
+  .cal-mini-cell.today.has-events::after { background: var(--paper); }
+
+  @media (max-width: 760px) {
+    .calendar-grid.year-mode { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ---- Week view: 7 day columns ---- */
+  .calendar-grid.week-mode {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+  }
+  .cal-week-col {
+    border-right: 1px solid rgba(42,31,18,0.18);
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+  }
+  .cal-week-col:last-child { border-right: none; }
+  .cal-week-head {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.55rem 0.6rem;
+    text-align: center;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .cal-week-head.today {
+    background: var(--coral);
+  }
+  .cal-week-day {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 800;
+    opacity: 0.75;
+  }
+  .cal-week-date {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-top: 0.15rem;
+  }
+  .cal-week-add {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(42,31,18,0.15);
+    padding: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .cal-week-add:hover { background: rgba(42,31,18,0.08); color: var(--ink); }
+  .cal-week-events {
+    flex: 1;
+    padding: 0.55rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .cal-week-item {
+    border-left: 4px solid var(--ev-color, var(--ink));
+    background: rgba(255,255,255,0.55);
+    padding: 0.4rem 0.55rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+  .cal-week-item:hover { background: rgba(255,255,255,0.85); }
+  .cal-week-item.exam { background: rgba(240,217,154,0.55); border-left-color: var(--coral); cursor: default; }
+  .cal-week-time {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+  }
+  .cal-week-title {
+    font-weight: 700;
+    color: var(--ink);
+    font-family: Georgia, "Times New Roman", serif;
+    margin-top: 0.05rem;
+    word-break: break-word;
+  }
+  .cal-week-notes {
+    font-size: 0.7rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-top: 0.15rem;
+  }
+  .cal-week-empty {
+    color: var(--muted);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  @media (max-width: 760px) {
+    .calendar-grid.week-mode { grid-template-columns: 1fr; }
+    .cal-week-col { border-right: none; border-bottom: 1px solid rgba(42,31,18,0.18); min-height: 0; }
+    .cal-week-col:last-child { border-bottom: none; }
+  }
+
+  /* ---- Modal colour-pick ---- */
+  .color-pick {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+  }
+  .color-swatch {
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--ink);
+    background: var(--swatch-color, var(--ink));
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    box-shadow: 2px 2px 0 var(--ink);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .color-swatch:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+  .color-swatch.selected { box-shadow: 3px 3px 0 var(--coral); }
+  .color-swatch.selected::after {
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 900;
+    font-size: 1rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  }
 
   @media (max-width: 640px) {
     .calendar-cell { min-height: 56px; padding: 0.35rem 0.35rem 0.4rem; }
@@ -1249,10 +1537,15 @@
     <section class="view" id="calendarView" hidden>
       <div class="calendar-header">
         <h2 class="calendar-title" id="calendarTitle"></h2>
+        <div class="cal-mode-switch" role="tablist">
+          <button type="button" data-mode="year" role="tab">Year</button>
+          <button type="button" data-mode="month" role="tab" class="active">Month</button>
+          <button type="button" data-mode="week" role="tab">Week</button>
+        </div>
         <div class="calendar-nav">
-          <button type="button" class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
+          <button type="button" class="cal-nav-btn" id="calPrev" aria-label="Previous">‹</button>
           <button type="button" class="cal-nav-btn" id="calToday">Today</button>
-          <button type="button" class="cal-nav-btn" id="calNext" aria-label="Next month">›</button>
+          <button type="button" class="cal-nav-btn" id="calNext" aria-label="Next">›</button>
         </div>
       </div>
       <div class="calendar-grid" id="calendarGrid"></div>
@@ -1374,7 +1667,7 @@
     flashcardsDirty: false,
     flashcardsNav: { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
     calendarEvents: [],
-    calendarView: { year: 0, month: 0, selected: null },
+    calendarView: { year: 0, month: 0, selected: null, mode: 'month' },
     quoteOrder: []
   };
 
@@ -1927,20 +2220,48 @@
     fields.forEach(f => {
       const label = document.createElement('label');
       label.textContent = f.label;
-      const input = f.multiline
-        ? document.createElement('textarea')
-        : document.createElement('input');
-      if (!f.multiline) input.type = f.type || 'text';
-      input.name = f.name;
-      input.value = f.value || '';
-      if (f.placeholder) input.placeholder = f.placeholder;
-      if (f.required) input.required = true;
-      label.appendChild(input);
+
+      if (f.type === 'color-pick') {
+        const wrap = document.createElement('div');
+        wrap.className = 'color-pick';
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = f.name;
+        hidden.value = f.value || (f.options && f.options[0] && f.options[0].id) || '';
+        wrap.appendChild(hidden);
+        (f.options || []).forEach(opt => {
+          const sw = document.createElement('button');
+          sw.type = 'button';
+          sw.className = 'color-swatch' + (opt.id === hidden.value ? ' selected' : '');
+          sw.style.setProperty('--swatch-color', opt.css);
+          sw.dataset.color = opt.id;
+          sw.title = opt.name;
+          sw.setAttribute('aria-label', opt.name);
+          sw.addEventListener('click', () => {
+            hidden.value = opt.id;
+            wrap.querySelectorAll('.color-swatch').forEach(s => {
+              s.classList.toggle('selected', s.dataset.color === opt.id);
+            });
+          });
+          wrap.appendChild(sw);
+        });
+        label.appendChild(wrap);
+      } else {
+        const input = f.multiline
+          ? document.createElement('textarea')
+          : document.createElement('input');
+        if (!f.multiline) input.type = f.type || 'text';
+        input.name = f.name;
+        input.value = f.value || '';
+        if (f.placeholder) input.placeholder = f.placeholder;
+        if (f.required) input.required = true;
+        label.appendChild(input);
+      }
       modalForm.appendChild(label);
     });
     modalOnSave = onSave;
     editModal.hidden = false;
-    const first = modalForm.querySelector('input, textarea');
+    const first = modalForm.querySelector('input:not([type="hidden"]), textarea');
     if (first) first.focus();
   }
 
@@ -2547,6 +2868,22 @@
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const DOW_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
+  const CALENDAR_COLORS = [
+    { id: 'ink',     name: 'Ink',     css: '#2a1f12' },
+    { id: 'coral',   name: 'Coral',   css: '#c95c40' },
+    { id: 'teal',    name: 'Teal',    css: '#4d8a87' },
+    { id: 'mustard', name: 'Mustard', css: '#c89a3f' },
+    { id: 'plum',    name: 'Plum',    css: '#704c5e' }
+  ];
+  function eventColorCss(id) {
+    const c = CALENDAR_COLORS.find(x => x.id === id);
+    return c ? c.css : '#2a1f12';
+  }
+  function eventColorFor(ev) {
+    if (ev.isExam) return '#c95c40';
+    return eventColorCss(ev.color || 'ink');
+  }
+
   function isoForDate(d) {
     return d.getFullYear() + '-'
       + String(d.getMonth() + 1).padStart(2, '0') + '-'
@@ -2602,11 +2939,24 @@
   function renderCalendar() {
     if (calendarView_el.hidden) return;
     if (!state.calendarView.selected) state.calendarView.selected = todayIso();
-    const { year, month } = state.calendarView;
 
+    document.querySelectorAll('.cal-mode-switch button[data-mode]').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === state.calendarView.mode);
+    });
+
+    const mode = state.calendarView.mode;
+    if (mode === 'year') return renderYearView();
+    if (mode === 'week') return renderWeekView();
+    return renderMonthView();
+  }
+
+  function renderMonthView() {
+    const { year, month } = state.calendarView;
     calendarTitle.textContent = `${MONTH_NAMES[month]} ${year}`;
 
+    calendarGrid.className = 'calendar-grid month-mode';
     calendarGrid.innerHTML = '';
+
     DOW_NAMES.forEach(name => {
       const dow = document.createElement('div');
       dow.className = 'calendar-dow';
@@ -2623,20 +2973,32 @@
         + (cell.inMonth ? '' : ' muted')
         + (cell.date === today ? ' today' : '')
         + (cell.date === state.calendarView.selected ? ' selected' : '');
+
+      const header = document.createElement('div');
+      header.className = 'cal-cell-header';
       const dayNum = document.createElement('span');
       dayNum.className = 'day-num';
       dayNum.textContent = cell.day;
-      div.appendChild(dayNum);
+      header.appendChild(dayNum);
+      div.appendChild(header);
 
       if (events.length) {
-        const dots = document.createElement('div');
-        dots.className = 'event-dots';
-        events.slice(0, 5).forEach(ev => {
+        const list = document.createElement('div');
+        list.className = 'cal-cell-events';
+        events.forEach(ev => {
+          const item = document.createElement('div');
+          item.className = 'cal-cell-event' + (ev.isExam ? ' exam' : '');
+          item.style.setProperty('--ev-color', eventColorFor(ev));
           const dot = document.createElement('span');
-          dot.className = 'event-dot' + (ev.isExam ? ' exam' : '');
-          dots.appendChild(dot);
+          dot.className = 'event-dot';
+          item.appendChild(dot);
+          const t = document.createElement('span');
+          t.className = 'cal-cell-event-title';
+          t.textContent = (ev.time ? ev.time + ' ' : '') + ev.title;
+          item.appendChild(t);
+          list.appendChild(item);
         });
-        div.appendChild(dots);
+        div.appendChild(list);
       }
 
       div.addEventListener('click', () => {
@@ -2651,7 +3013,160 @@
       calendarGrid.appendChild(div);
     });
 
+    calendarDayPanel.hidden = false;
     renderDayPanel();
+  }
+
+  function renderYearView() {
+    const { year } = state.calendarView;
+    calendarTitle.textContent = String(year);
+
+    calendarGrid.className = 'calendar-grid year-mode';
+    calendarGrid.innerHTML = '';
+
+    const today = todayIso();
+
+    for (let m = 0; m < 12; m++) {
+      const mini = document.createElement('div');
+      mini.className = 'cal-mini-month';
+
+      const title = document.createElement('div');
+      title.className = 'cal-mini-title';
+      title.textContent = MONTH_NAMES[m];
+      title.addEventListener('click', () => {
+        state.calendarView.month = m;
+        state.calendarView.mode = 'month';
+        renderCalendar();
+      });
+      mini.appendChild(title);
+
+      const dow = document.createElement('div');
+      dow.className = 'cal-mini-dow';
+      DOW_NAMES.forEach(n => {
+        const d = document.createElement('span');
+        d.textContent = n.charAt(0);
+        dow.appendChild(d);
+      });
+      mini.appendChild(dow);
+
+      const grid = document.createElement('div');
+      grid.className = 'cal-mini-grid';
+      const cells = buildMonthCells(year, m);
+      cells.forEach(cell => {
+        const c = document.createElement('div');
+        c.className = 'cal-mini-cell'
+          + (cell.inMonth ? '' : ' muted')
+          + (cell.date === today ? ' today' : '');
+        c.textContent = cell.inMonth ? cell.day : '';
+        const events = getEventsForDate(cell.date);
+        if (events.length && cell.inMonth) {
+          c.classList.add('has-events');
+          c.style.setProperty('--dot-color', eventColorFor(events[0]));
+          c.title = events.map(e => (e.time ? e.time + ' ' : '') + e.title).join('\n');
+        }
+        c.addEventListener('click', () => {
+          if (!cell.inMonth) return;
+          state.calendarView.month = m;
+          state.calendarView.selected = cell.date;
+          state.calendarView.mode = 'month';
+          renderCalendar();
+        });
+        grid.appendChild(c);
+      });
+      mini.appendChild(grid);
+      calendarGrid.appendChild(mini);
+    }
+
+    calendarDayPanel.hidden = true;
+  }
+
+  function renderWeekView() {
+    const sel = state.calendarView.selected || todayIso();
+    const base = new Date(sel + 'T00:00:00');
+    const dow = (base.getDay() + 6) % 7;
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - dow);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(d);
+    }
+    const start = days[0];
+    const end = days[6];
+    const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+    const startLabel = start.toLocaleDateString(undefined, sameMonth ? { day: 'numeric' } : { day: 'numeric', month: 'short' });
+    const endLabel = end.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    calendarTitle.textContent = `${startLabel} – ${endLabel}`;
+
+    calendarGrid.className = 'calendar-grid week-mode';
+    calendarGrid.innerHTML = '';
+
+    const today = todayIso();
+    days.forEach(d => {
+      const iso = isoForDate(d);
+      const col = document.createElement('div');
+      col.className = 'cal-week-col';
+
+      const head = document.createElement('div');
+      head.className = 'cal-week-head' + (iso === today ? ' today' : '');
+      const dayName = document.createElement('div');
+      dayName.className = 'cal-week-day';
+      dayName.textContent = d.toLocaleDateString(undefined, { weekday: 'short' });
+      const dateNum = document.createElement('div');
+      dateNum.className = 'cal-week-date';
+      dateNum.textContent = d.getDate();
+      head.appendChild(dayName);
+      head.appendChild(dateNum);
+      col.appendChild(head);
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'cal-week-add';
+      addBtn.textContent = '+ Add';
+      addBtn.addEventListener('click', () => promptCalendarEvent(null, iso));
+      col.appendChild(addBtn);
+
+      const list = document.createElement('div');
+      list.className = 'cal-week-events';
+      const events = getEventsForDate(iso);
+      if (!events.length) {
+        const empty = document.createElement('div');
+        empty.className = 'cal-week-empty';
+        empty.textContent = '—';
+        list.appendChild(empty);
+      } else {
+        events.forEach(ev => {
+          const item = document.createElement('div');
+          item.className = 'cal-week-item' + (ev.isExam ? ' exam' : '');
+          item.style.setProperty('--ev-color', eventColorFor(ev));
+          const t = document.createElement('div');
+          t.className = 'cal-week-time';
+          t.textContent = ev.time || 'All day';
+          const ti = document.createElement('div');
+          ti.className = 'cal-week-title';
+          ti.textContent = ev.title;
+          item.appendChild(t);
+          item.appendChild(ti);
+          if (ev.notes) {
+            const n = document.createElement('div');
+            n.className = 'cal-week-notes';
+            n.textContent = ev.notes;
+            item.appendChild(n);
+          }
+          if (!ev.isExam) {
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', () => promptCalendarEvent(ev, iso));
+          }
+          list.appendChild(item);
+        });
+      }
+      col.appendChild(list);
+      calendarGrid.appendChild(col);
+    });
+
+    calendarDayPanel.hidden = true;
   }
 
   function renderDayPanel() {
@@ -2686,6 +3201,7 @@
     events.forEach(ev => {
       const row = document.createElement('div');
       row.className = 'calendar-event-row' + (ev.isExam ? ' exam' : '');
+      row.style.setProperty('--ev-color', eventColorFor(ev));
       const timeEl = document.createElement('div');
       timeEl.className = 'calendar-event-time';
       timeEl.textContent = ev.time || 'All day';
@@ -2726,23 +3242,25 @@
     });
   }
 
-  function addCalendarEvent({ title, date, time, notes }) {
+  function addCalendarEvent({ title, date, time, notes, color }) {
     state.calendarEvents.push({
       id: newId(),
       title: title.trim(),
       date,
       time: (time || '').trim() || '',
-      notes: (notes || '').trim() || ''
+      notes: (notes || '').trim() || '',
+      color: color || 'ink'
     });
     save(); pushRemote(); renderCalendar();
   }
-  function updateCalendarEvent(id, { title, date, time, notes }) {
+  function updateCalendarEvent(id, { title, date, time, notes, color }) {
     const ev = state.calendarEvents.find(e => e.id === id);
     if (!ev) return;
     ev.title = title.trim();
     ev.date = date;
     ev.time = (time || '').trim() || '';
     ev.notes = (notes || '').trim() || '';
+    ev.color = color || ev.color || 'ink';
     save(); pushRemote(); renderCalendar();
   }
   function deleteCalendarEvent(id) {
@@ -2757,7 +3275,8 @@
         { name: 'title', label: 'Title', value: existing ? existing.title : '', required: true, placeholder: 'e.g. Study group' },
         { name: 'date',  label: 'Date',  value: existing ? existing.date  : (defaultDate || todayIso()), required: true, type: 'date' },
         { name: 'time',  label: 'Time (optional)', value: existing ? existing.time : '', type: 'time' },
-        { name: 'notes', label: 'Notes (optional)', value: existing ? existing.notes : '', multiline: true }
+        { name: 'notes', label: 'Notes (optional)', value: existing ? existing.notes : '', multiline: true },
+        { name: 'color', label: 'Colour', value: existing ? (existing.color || 'ink') : 'ink', type: 'color-pick', options: CALENDAR_COLORS }
       ],
       onSave: (values) => {
         if (!values.title) { window.alert('Title is required.'); return false; }
@@ -2781,23 +3300,41 @@
     });
   }
 
-  function calNavMonth(delta) {
-    let m = state.calendarView.month + delta;
-    let y = state.calendarView.year;
-    if (m < 0) { m += 12; y -= 1; }
-    if (m > 11) { m -= 12; y += 1; }
-    state.calendarView.month = m;
-    state.calendarView.year = y;
+  function calNav(delta) {
+    const mode = state.calendarView.mode;
+    if (mode === 'year') {
+      state.calendarView.year += delta;
+    } else if (mode === 'week') {
+      const sel = state.calendarView.selected || todayIso();
+      const d = new Date(sel + 'T00:00:00');
+      d.setDate(d.getDate() + delta * 7);
+      state.calendarView.selected = isoForDate(d);
+      state.calendarView.year = d.getFullYear();
+      state.calendarView.month = d.getMonth();
+    } else {
+      let m = state.calendarView.month + delta;
+      let y = state.calendarView.year;
+      if (m < 0) { m += 12; y -= 1; }
+      if (m > 11) { m -= 12; y += 1; }
+      state.calendarView.month = m;
+      state.calendarView.year = y;
+    }
     renderCalendar();
   }
-  if (calPrevBtn) calPrevBtn.addEventListener('click', () => calNavMonth(-1));
-  if (calNextBtn) calNextBtn.addEventListener('click', () => calNavMonth(1));
+  if (calPrevBtn) calPrevBtn.addEventListener('click', () => calNav(-1));
+  if (calNextBtn) calNextBtn.addEventListener('click', () => calNav(1));
   if (calTodayBtn) calTodayBtn.addEventListener('click', () => {
     const t = new Date();
     state.calendarView.year = t.getFullYear();
     state.calendarView.month = t.getMonth();
     state.calendarView.selected = todayIso();
     renderCalendar();
+  });
+  document.querySelectorAll('.cal-mode-switch button[data-mode]').forEach(b => {
+    b.addEventListener('click', () => {
+      state.calendarView.mode = b.dataset.mode;
+      renderCalendar();
+    });
   });
 
   load();
