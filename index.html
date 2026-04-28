@@ -648,6 +648,23 @@
     font-size: 1.3rem;
     padding: 0.3rem 0.55rem;
   }
+  .settings-row-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+  .settings-row-actions .icon-btn {
+    background: transparent;
+    border: none;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+  }
+  .settings-row-actions .icon-btn:hover { color: var(--ink); background: rgba(28,31,18,0.07); }
+  .settings-row-actions .icon-btn.danger:hover { color: var(--danger); background: rgba(200,84,71,0.12); }
 
   /* Settings sub-nav */
   .settings-tabs {
@@ -1223,6 +1240,121 @@
     text-shadow: 0 1px 2px rgba(0,0,0,0.55);
   }
 
+  /* ===== Login gate ===== */
+  .login-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(40, 25, 5, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .login-gate[hidden] { display: none; }
+  .login-card {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    padding: 2rem 1.85rem 1.85rem;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+  }
+  .login-card h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .login-card h1::after {
+    content: "";
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: var(--coral);
+    margin: 0.55rem auto 0;
+  }
+  .login-card > p {
+    margin: 0.85rem 0 1.4rem;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .login-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+  }
+  .login-card label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+  }
+  .login-card input {
+    padding: 0.65rem 0.75rem;
+    border: 1.5px solid var(--ink);
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--ink);
+    border-radius: 0;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .login-card input:focus {
+    outline: none;
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--coral);
+  }
+  .login-card button[type="submit"] {
+    margin-top: 0.4rem;
+    padding: 0.75rem 1.4rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge),
+      3px 3px 0 var(--coral),
+      4px 4px 0 var(--coral),
+      5px 5px 0 var(--coral);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .login-card button[type="submit"]:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-stack-lift);
+  }
+  .login-card button[type="submit"]:active {
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow-stack-press);
+  }
+  .login-error {
+    color: var(--danger) !important;
+    font-style: normal !important;
+    font-weight: 800 !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 1rem 0 0 !important;
+    font-family: inherit !important;
+  }
+
   @media (max-width: 640px) {
     .calendar-cell { min-height: 56px; padding: 0.35rem 0.35rem 0.4rem; }
     .calendar-cell .day-num { font-size: 0.74rem; padding: 0.08rem 0.3rem; }
@@ -1523,6 +1655,24 @@
 </style>
 </head>
 <body>
+  <div class="login-gate" id="loginGate">
+    <div class="login-card">
+      <h1>Revision Hub</h1>
+      <p>Sign in to continue.</p>
+      <form id="loginForm" autocomplete="off">
+        <label>
+          Username
+          <input type="text" id="loginUser" autocomplete="username" required />
+        </label>
+        <label>
+          Password
+          <input type="password" id="loginPass" autocomplete="current-password" required />
+        </label>
+        <button type="submit">Sign in</button>
+      </form>
+      <p class="login-error" id="loginError" hidden>Wrong username or password.</p>
+    </div>
+  </div>
   <header>
     <h1 id="pageTitle">Revision Hub</h1>
     <p id="pageTagline">Stay calm. Stay prepared. Track every exam in one place.</p>
@@ -1632,6 +1782,45 @@
   const FLASHCARDS_DIRTY_KEY = 'flashcard-sets-dirty';
   const CALENDAR_KEY = 'calendar-events';
   const SAVE_PASSWORD = 'Quack';
+  const LOGIN_USER = 'Teeg';
+  const LOGIN_PASS = 'Ghost';
+  const LOGIN_KEY = 'revision-hub-auth';
+
+  /* ===== Login gate ===== */
+  const loginGate = document.getElementById('loginGate');
+  const loginForm = document.getElementById('loginForm');
+  const loginUserInput = document.getElementById('loginUser');
+  const loginPassInput = document.getElementById('loginPass');
+  const loginError = document.getElementById('loginError');
+
+  function isLoggedIn() {
+    return sessionStorage.getItem(LOGIN_KEY) === '1';
+  }
+  function showLoginGate() {
+    loginGate.hidden = false;
+    loginError.hidden = true;
+    loginUserInput.value = '';
+    loginPassInput.value = '';
+    setTimeout(() => loginUserInput.focus(), 0);
+  }
+  function hideLoginGate() {
+    loginGate.hidden = true;
+  }
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (loginUserInput.value === LOGIN_USER && loginPassInput.value === LOGIN_PASS) {
+      sessionStorage.setItem(LOGIN_KEY, '1');
+      hideLoginGate();
+      loginError.hidden = true;
+      loginUserInput.value = '';
+      loginPassInput.value = '';
+    } else {
+      loginError.hidden = false;
+      loginPassInput.value = '';
+      loginPassInput.focus();
+    }
+  });
+
   const JSONBIN_BIN_ID = '69ee444c36566621a8f3a85f';
   const JSONBIN_KEY = '$2a$10$VLqtJYJNOq9KDHJ1u8TaXeUqazTjHr0q8P1HnPfOhl/LUJUoHQXNG';
   const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID;
@@ -1899,6 +2088,43 @@
     return h * 60 + m;
   }
 
+  function durationToTimeInput(mins) {
+    if (!mins || mins <= 0) return '';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
+
+  function promptEditExam(exam) {
+    const date = (exam.datetime || '').slice(0, 10);
+    const time = (exam.datetime || '').slice(11, 16);
+    openModal({
+      title: 'Edit exam',
+      fields: [
+        { name: 'subject', label: 'Subject', value: exam.subject, required: true, placeholder: 'e.g. Mathematics' },
+        { name: 'date', label: 'Date', value: date, type: 'date', required: true },
+        { name: 'time', label: 'Time (optional)', value: time, type: 'time' },
+        { name: 'duration', label: 'Length (optional)', value: durationToTimeInput(exam.durationMins), type: 'time' }
+      ],
+      onSave: (vals) => {
+        if (!vals.subject) { window.alert('Subject is required.'); return false; }
+        if (!vals.date)    { window.alert('Date is required.');    return false; }
+        const pwd = window.prompt('Enter password to save changes:');
+        if (pwd === null) return false;
+        if (pwd !== SAVE_PASSWORD) {
+          window.alert('Incorrect password. Changes not saved.');
+          return false;
+        }
+        exam.subject = vals.subject.trim();
+        exam.datetime = vals.time ? `${vals.date}T${vals.time}` : `${vals.date}T09:00`;
+        exam.durationMins = parseDurationInput(vals.duration);
+        save();
+        pushRemote();
+        render();
+      }
+    });
+  }
+
   function addExam(subject, dateStr, timeStr, durationMins) {
     const iso = timeStr ? `${dateStr}T${timeStr}` : `${dateStr}T09:00`;
     const exam = {
@@ -2007,7 +2233,10 @@
           <p class="settings-row-title"></p>
           <div class="settings-row-meta"></div>
         </div>
-        <button class="delete-btn" aria-label="Delete exam" title="Delete">&times;</button>
+        <div class="settings-row-actions">
+          <button class="icon-btn" data-act="edit" aria-label="Edit exam" title="Edit">✎</button>
+          <button class="icon-btn danger" data-act="delete" aria-label="Delete exam" title="Delete">×</button>
+        </div>
       `;
       row.querySelector('.settings-row-title').textContent = exam.subject;
       const metaParts = [formatDate(exam.datetime)];
@@ -2016,7 +2245,8 @@
       if (finishStr) metaParts.push('finishes ' + finishStr);
       if (isDone) metaParts.push('Done');
       row.querySelector('.settings-row-meta').textContent = metaParts.join(' · ');
-      row.querySelector('.delete-btn').addEventListener('click', () => {
+      row.querySelector('[data-act="edit"]').addEventListener('click', () => promptEditExam(exam));
+      row.querySelector('[data-act="delete"]').addEventListener('click', () => {
         if (window.confirm(`Delete "${exam.subject}"?`)) deleteExam(exam.id);
       });
       settingsExamsList.appendChild(row);
@@ -3349,6 +3579,9 @@
   setInterval(tick, 1000);
   fetchRemote();
   window.addEventListener('online', fetchRemote);
+
+  if (isLoggedIn()) hideLoginGate();
+  else showLoginGate();
 })();
 </script>
 </body>
