@@ -436,6 +436,29 @@
   }
   .exam-card.urgent .done-badge { background: var(--paper); color: var(--ink); }
 
+  /* Done cards on the home view become click-to-dismiss */
+  .exam-card.dismissable { cursor: pointer; position: relative; }
+  .exam-card.dismissable::after {
+    content: "Click to dismiss";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(42, 31, 18, 0.78);
+    color: var(--paper);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    pointer-events: none;
+  }
+  .exam-card.dismissable:hover::after,
+  .exam-card.dismissable:focus-visible::after { opacity: 1; }
+
   .quote {
     margin-top: auto;
     font-size: 0.85rem;
@@ -1422,6 +1445,16 @@
           if (finishStr) card.querySelector('.finish-value').textContent = finishStr;
         }
         card.querySelector('.quote').textContent = '“' + quoteForIndex(i) + '”';
+
+        if (isDone) {
+          card.title = 'Click to dismiss';
+          card.classList.add('dismissable');
+          card.addEventListener('click', () => {
+            if (window.confirm(`Dismiss "${exam.subject}" from the dashboard?`)) {
+              deleteExam(exam.id);
+            }
+          });
+        }
 
         examsList.appendChild(card);
       });
