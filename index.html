@@ -746,6 +746,203 @@
   .btn-ghost { background: var(--paper); color: var(--danger); border-color: var(--danger); }
   .btn-ghost:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--danger); }
 
+  /* ===== Calendar ===== */
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.4rem;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+  }
+  .calendar-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .calendar-nav { display: flex; gap: 0.5rem; }
+  .cal-nav-btn {
+    padding: 0.55rem 0.95rem;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--coral);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .cal-nav-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--coral); }
+  .cal-nav-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--coral); }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    margin-bottom: 1.6rem;
+  }
+  .calendar-dow {
+    padding: 0.55rem 0.4rem;
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 800;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 0.14em;
+  }
+  .calendar-cell {
+    padding: 0.45rem 0.5rem 0.5rem;
+    min-height: 78px;
+    border-right: 1px solid rgba(42,31,18,0.18);
+    border-bottom: 1px solid rgba(42,31,18,0.18);
+    cursor: pointer;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: background 0.1s, color 0.1s;
+  }
+  .calendar-cell:nth-child(7n+7) { border-right: none; }
+  .calendar-grid > .calendar-cell:nth-last-child(-n+7) { border-bottom: none; }
+  .calendar-cell:hover { background: rgba(42,31,18,0.08); }
+  .calendar-cell.muted { color: var(--muted); background: rgba(0,0,0,0.04); }
+  .calendar-cell.muted:hover { background: rgba(0,0,0,0.08); }
+  .calendar-cell .day-num {
+    font-weight: 800;
+    font-size: 0.82rem;
+    align-self: flex-end;
+    padding: 0.1rem 0.35rem;
+    line-height: 1;
+    border-radius: 0;
+  }
+  .calendar-cell.today .day-num {
+    background: var(--coral);
+    color: var(--paper);
+  }
+  .calendar-cell.selected {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .calendar-cell.selected.muted { color: var(--paper-cool); }
+  .calendar-cell.selected:hover { background: var(--ink); }
+  .calendar-cell.selected .day-num { color: var(--paper); background: transparent; }
+  .calendar-cell.selected.today .day-num { background: var(--coral); color: var(--paper); }
+  .calendar-cell .event-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: auto;
+    padding-top: 0.3rem;
+  }
+  .calendar-cell .event-dot {
+    width: 7px; height: 7px;
+    background: var(--ink);
+    border-radius: 50%;
+  }
+  .calendar-cell.selected .event-dot { background: var(--paper); }
+  .calendar-cell .event-dot.exam { background: var(--coral); }
+
+  .calendar-day-panel {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    padding: 1.25rem 1.4rem 1.4rem;
+  }
+  .calendar-day-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+  }
+  .calendar-day-panel-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .calendar-event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .calendar-event-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.95rem;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    box-shadow: 3px 3px 0 var(--coral);
+  }
+  .calendar-event-row.exam { background: #f0d99a; }
+  .calendar-event-time {
+    font-weight: 800;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    min-width: 3.4rem;
+    color: var(--ink);
+  }
+  .calendar-event-title {
+    flex: 1;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    color: var(--ink);
+    word-break: break-word;
+    min-width: 0;
+  }
+  .calendar-event-notes {
+    display: block;
+    font-family: inherit;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 0.15rem;
+  }
+  .calendar-event-badge {
+    font-size: 0.6rem;
+    padding: 0.18rem 0.5rem;
+    background: var(--ink);
+    color: var(--paper);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 800;
+  }
+  .calendar-event-actions { display: flex; gap: 0.3rem; }
+  .calendar-event-actions .icon-btn {
+    background: transparent;
+    border: none;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+  }
+  .calendar-event-actions .icon-btn:hover { color: var(--ink); background: rgba(28,31,18,0.07); }
+  .calendar-event-actions .icon-btn.danger:hover { color: var(--danger); background: rgba(200,84,71,0.12); }
+
+  @media (max-width: 640px) {
+    .calendar-cell { min-height: 56px; padding: 0.35rem 0.35rem 0.4rem; }
+    .calendar-cell .day-num { font-size: 0.74rem; padding: 0.08rem 0.3rem; }
+    .calendar-dow { font-size: 0.55rem; letter-spacing: 0.08em; padding: 0.4rem 0.2rem; }
+    .calendar-title { font-size: 1.25rem; }
+    .cal-nav-btn { padding: 0.5rem 0.8rem; font-size: 0.7rem; }
+  }
+
   /* ===== Flashcards ===== */
   .fc-dirty {
     display: flex;
@@ -1049,6 +1246,19 @@
       <div class="exams" id="examsList"></div>
     </section>
 
+    <section class="view" id="calendarView" hidden>
+      <div class="calendar-header">
+        <h2 class="calendar-title" id="calendarTitle"></h2>
+        <div class="calendar-nav">
+          <button type="button" class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
+          <button type="button" class="cal-nav-btn" id="calToday">Today</button>
+          <button type="button" class="cal-nav-btn" id="calNext" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="calendar-day-panel" id="calendarDayPanel"></div>
+    </section>
+
     <section class="view" id="flashcardsView" hidden>
       <div class="fc-dirty" id="flashcardsDirtyBanner" hidden>
         <span>Unsaved changes</span>
@@ -1105,6 +1315,7 @@
   <button type="button" class="menu-btn" id="menuButton" aria-label="Menu" aria-haspopup="true" aria-expanded="false">☰</button>
   <nav class="menu-panel" id="menuPanel" hidden>
     <button type="button" data-view="home">Home</button>
+    <button type="button" data-view="calendar">Calendar</button>
     <button type="button" data-view="flashcards">Flashcards</button>
     <button type="button" data-view="settings">Settings</button>
   </nav>
@@ -1126,6 +1337,7 @@
   const QUOTES_KEY = 'exam-countdown-quotes';
   const FLASHCARDS_KEY = 'flashcard-sets';
   const FLASHCARDS_DIRTY_KEY = 'flashcard-sets-dirty';
+  const CALENDAR_KEY = 'calendar-events';
   const SAVE_PASSWORD = 'Quack';
   const JSONBIN_BIN_ID = '69ee444c36566621a8f3a85f';
   const JSONBIN_KEY = '$2a$10$VLqtJYJNOq9KDHJ1u8TaXeUqazTjHr0q8P1HnPfOhl/LUJUoHQXNG';
@@ -1161,6 +1373,8 @@
     flashcardSets: [],
     flashcardsDirty: false,
     flashcardsNav: { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
+    calendarEvents: [],
+    calendarView: { year: 0, month: 0, selected: null },
     quoteOrder: []
   };
 
@@ -1215,6 +1429,15 @@
     }
     state.flashcardsDirty = localStorage.getItem(FLASHCARDS_DIRTY_KEY) === '1';
     try {
+      const rawCal = localStorage.getItem(CALENDAR_KEY);
+      if (rawCal) {
+        const parsed = JSON.parse(rawCal);
+        if (Array.isArray(parsed)) state.calendarEvents = parsed;
+      }
+    } catch (e) {
+      state.calendarEvents = [];
+    }
+    try {
       const rawQuotes = localStorage.getItem(QUOTES_KEY);
       if (rawQuotes) {
         const parsed = JSON.parse(rawQuotes);
@@ -1229,6 +1452,7 @@
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.exams));
     localStorage.setItem(FLASHCARDS_KEY, JSON.stringify(state.flashcardSets));
+    localStorage.setItem(CALENDAR_KEY, JSON.stringify(state.calendarEvents));
   }
 
   /* ===== Remote sync (JSONBin) ===== */
@@ -1277,10 +1501,15 @@
         state.flashcardSets = record.flashcardSets;
         changed = true;
       }
+      if (record && Array.isArray(record.calendarEvents)) {
+        state.calendarEvents = record.calendarEvents;
+        changed = true;
+      }
       if (changed) {
         save();
         render();
         renderFlashcards();
+        renderCalendar();
       }
       setSyncStatus('synced');
     } catch (e) {
@@ -1303,7 +1532,11 @@
           'Content-Type': 'application/json',
           'X-Access-Key': JSONBIN_KEY
         },
-        body: JSON.stringify({ exams: state.exams, flashcardSets: state.flashcardSets })
+        body: JSON.stringify({
+          exams: state.exams,
+          flashcardSets: state.flashcardSets,
+          calendarEvents: state.calendarEvents
+        })
       });
       setSyncStatus('synced');
     } catch (e) {
@@ -1553,15 +1786,18 @@
   /* ===== View switching ===== */
   const TAGLINES = {
     home: 'Stay calm. Stay prepared. Track every exam in one place.',
+    calendar: 'Plan your days. Exams plot themselves.',
     flashcards: 'Drill the things you keep forgetting.',
     settings: 'Add or remove exams from your revision hub.'
   };
 
   function showView(name) {
     const wasFlashcards = !flashcardsView.hidden;
+    const calendarEl = document.getElementById('calendarView');
     homeView.hidden = name !== 'home';
     flashcardsView.hidden = name !== 'flashcards';
     settingsView.hidden = name !== 'settings';
+    if (calendarEl) calendarEl.hidden = name !== 'calendar';
     pageTagline.textContent = TAGLINES[name] || TAGLINES.home;
     menuPanel.querySelectorAll('button').forEach(b => {
       b.classList.toggle('active', b.dataset.view === name);
@@ -1571,6 +1807,7 @@
     } else {
       state.flashcardsNav.mode = null;
     }
+    if (name === 'calendar') renderCalendar();
     if (name === 'settings') showSubview('exams');
     if (wasFlashcards && name !== 'flashcards') commitFlashcards();
     closeMenu();
@@ -1693,7 +1930,7 @@
       const input = f.multiline
         ? document.createElement('textarea')
         : document.createElement('input');
-      if (!f.multiline) input.type = 'text';
+      if (!f.multiline) input.type = f.type || 'text';
       input.name = f.name;
       input.value = f.value || '';
       if (f.placeholder) input.placeholder = f.placeholder;
@@ -2296,9 +2533,281 @@
     saveNowBtn.addEventListener('click', () => commitFlashcards({ silentIfClean: false }));
   }
 
+  /* ===================================================================
+   * Calendar
+   * =================================================================== */
+  const calendarView_el = document.getElementById('calendarView');
+  const calendarTitle = document.getElementById('calendarTitle');
+  const calendarGrid = document.getElementById('calendarGrid');
+  const calendarDayPanel = document.getElementById('calendarDayPanel');
+  const calPrevBtn = document.getElementById('calPrev');
+  const calNextBtn = document.getElementById('calNext');
+  const calTodayBtn = document.getElementById('calToday');
+
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  function isoForDate(d) {
+    return d.getFullYear() + '-'
+      + String(d.getMonth() + 1).padStart(2, '0') + '-'
+      + String(d.getDate()).padStart(2, '0');
+  }
+  function todayIso() { return isoForDate(new Date()); }
+
+  function getEventsForDate(iso) {
+    const userEvents = state.calendarEvents
+      .filter(e => e.date === iso)
+      .map(e => ({ ...e, isExam: false }));
+    const examEvents = state.exams
+      .filter(e => typeof e.datetime === 'string' && e.datetime.slice(0, 10) === iso)
+      .map(e => ({
+        id: 'exam:' + e.id,
+        title: e.subject,
+        date: iso,
+        time: e.datetime.slice(11, 16),
+        notes: e.durationMins ? formatDuration(e.durationMins) + ' exam' : 'Exam',
+        isExam: true
+      }));
+    return [...userEvents, ...examEvents].sort((a, b) => {
+      const ta = a.time || '';
+      const tb = b.time || '';
+      if (ta && tb) return ta.localeCompare(tb);
+      if (ta) return -1;
+      if (tb) return 1;
+      return 0;
+    });
+  }
+
+  function buildMonthCells(year, month) {
+    const first = new Date(year, month, 1);
+    const startDow = (first.getDay() + 6) % 7; // Monday-first
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = new Date(year, month, -i);
+      cells.push({ date: isoForDate(d), day: d.getDate(), inMonth: false });
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      cells.push({ date: isoForDate(d), day, inMonth: true });
+    }
+    while (cells.length < 42) {
+      const d = new Date(year, month + 1, cells.length - startDow - daysInMonth + 1);
+      cells.push({ date: isoForDate(d), day: d.getDate(), inMonth: false });
+    }
+    return cells;
+  }
+
+  function renderCalendar() {
+    if (calendarView_el.hidden) return;
+    if (!state.calendarView.selected) state.calendarView.selected = todayIso();
+    const { year, month } = state.calendarView;
+
+    calendarTitle.textContent = `${MONTH_NAMES[month]} ${year}`;
+
+    calendarGrid.innerHTML = '';
+    DOW_NAMES.forEach(name => {
+      const dow = document.createElement('div');
+      dow.className = 'calendar-dow';
+      dow.textContent = name;
+      calendarGrid.appendChild(dow);
+    });
+
+    const today = todayIso();
+    const cells = buildMonthCells(year, month);
+    cells.forEach(cell => {
+      const events = getEventsForDate(cell.date);
+      const div = document.createElement('div');
+      div.className = 'calendar-cell'
+        + (cell.inMonth ? '' : ' muted')
+        + (cell.date === today ? ' today' : '')
+        + (cell.date === state.calendarView.selected ? ' selected' : '');
+      const dayNum = document.createElement('span');
+      dayNum.className = 'day-num';
+      dayNum.textContent = cell.day;
+      div.appendChild(dayNum);
+
+      if (events.length) {
+        const dots = document.createElement('div');
+        dots.className = 'event-dots';
+        events.slice(0, 5).forEach(ev => {
+          const dot = document.createElement('span');
+          dot.className = 'event-dot' + (ev.isExam ? ' exam' : '');
+          dots.appendChild(dot);
+        });
+        div.appendChild(dots);
+      }
+
+      div.addEventListener('click', () => {
+        state.calendarView.selected = cell.date;
+        if (!cell.inMonth) {
+          const d = new Date(cell.date + 'T00:00:00');
+          state.calendarView.year = d.getFullYear();
+          state.calendarView.month = d.getMonth();
+        }
+        renderCalendar();
+      });
+      calendarGrid.appendChild(div);
+    });
+
+    renderDayPanel();
+  }
+
+  function renderDayPanel() {
+    const iso = state.calendarView.selected || todayIso();
+    const d = new Date(iso + 'T00:00:00');
+    const dateLabel = d.toLocaleDateString(undefined, {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    const events = getEventsForDate(iso);
+
+    calendarDayPanel.innerHTML = `
+      <div class="calendar-day-panel-header">
+        <h3 class="calendar-day-panel-title"></h3>
+        <button type="button" class="btn-primary" id="calAddEvent">+ Add event</button>
+      </div>
+      <div class="calendar-event-list" id="calEventList"></div>`;
+
+    calendarDayPanel.querySelector('.calendar-day-panel-title').textContent = dateLabel;
+    calendarDayPanel.querySelector('#calAddEvent').addEventListener('click', () => {
+      promptCalendarEvent(null, iso);
+    });
+
+    const listEl = calendarDayPanel.querySelector('#calEventList');
+    if (!events.length) {
+      const empty = document.createElement('div');
+      empty.className = 'fc-empty';
+      empty.textContent = 'No events on this day. Add one above.';
+      listEl.appendChild(empty);
+      return;
+    }
+
+    events.forEach(ev => {
+      const row = document.createElement('div');
+      row.className = 'calendar-event-row' + (ev.isExam ? ' exam' : '');
+      const timeEl = document.createElement('div');
+      timeEl.className = 'calendar-event-time';
+      timeEl.textContent = ev.time || 'All day';
+      row.appendChild(timeEl);
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'calendar-event-title';
+      titleEl.textContent = ev.title;
+      if (ev.notes) {
+        const notesEl = document.createElement('span');
+        notesEl.className = 'calendar-event-notes';
+        notesEl.textContent = ev.notes;
+        titleEl.appendChild(notesEl);
+      }
+      row.appendChild(titleEl);
+
+      if (ev.isExam) {
+        const badge = document.createElement('span');
+        badge.className = 'calendar-event-badge';
+        badge.textContent = 'Exam';
+        badge.title = 'Manage from Settings or Home';
+        row.appendChild(badge);
+      } else {
+        const actions = document.createElement('div');
+        actions.className = 'calendar-event-actions';
+        actions.innerHTML = `
+          <button class="icon-btn" data-act="edit" title="Edit">✎</button>
+          <button class="icon-btn danger" data-act="delete" title="Delete">×</button>`;
+        actions.querySelector('[data-act="edit"]').addEventListener('click', () => promptCalendarEvent(ev, iso));
+        actions.querySelector('[data-act="delete"]').addEventListener('click', () => {
+          if (!window.confirm(`Delete "${ev.title}"?`)) return;
+          deleteCalendarEvent(ev.id);
+        });
+        row.appendChild(actions);
+      }
+
+      listEl.appendChild(row);
+    });
+  }
+
+  function addCalendarEvent({ title, date, time, notes }) {
+    state.calendarEvents.push({
+      id: newId(),
+      title: title.trim(),
+      date,
+      time: (time || '').trim() || '',
+      notes: (notes || '').trim() || ''
+    });
+    save(); pushRemote(); renderCalendar();
+  }
+  function updateCalendarEvent(id, { title, date, time, notes }) {
+    const ev = state.calendarEvents.find(e => e.id === id);
+    if (!ev) return;
+    ev.title = title.trim();
+    ev.date = date;
+    ev.time = (time || '').trim() || '';
+    ev.notes = (notes || '').trim() || '';
+    save(); pushRemote(); renderCalendar();
+  }
+  function deleteCalendarEvent(id) {
+    state.calendarEvents = state.calendarEvents.filter(e => e.id !== id);
+    save(); pushRemote(); renderCalendar();
+  }
+
+  function promptCalendarEvent(existing, defaultDate) {
+    openModal({
+      title: existing ? 'Edit event' : 'New event',
+      fields: [
+        { name: 'title', label: 'Title', value: existing ? existing.title : '', required: true, placeholder: 'e.g. Study group' },
+        { name: 'date',  label: 'Date',  value: existing ? existing.date  : (defaultDate || todayIso()), required: true, type: 'date' },
+        { name: 'time',  label: 'Time (optional)', value: existing ? existing.time : '', type: 'time' },
+        { name: 'notes', label: 'Notes (optional)', value: existing ? existing.notes : '', multiline: true }
+      ],
+      onSave: (values) => {
+        if (!values.title) { window.alert('Title is required.'); return false; }
+        if (!values.date)  { window.alert('Date is required.');  return false; }
+        const pwd = window.prompt(existing ? 'Enter password to save changes:' : 'Enter password to save event:');
+        if (pwd === null) return false;
+        if (pwd !== SAVE_PASSWORD) {
+          window.alert('Incorrect password.');
+          return false;
+        }
+        if (existing) {
+          updateCalendarEvent(existing.id, values);
+        } else {
+          addCalendarEvent(values);
+          state.calendarView.selected = values.date;
+          const d = new Date(values.date + 'T00:00:00');
+          state.calendarView.year = d.getFullYear();
+          state.calendarView.month = d.getMonth();
+        }
+      }
+    });
+  }
+
+  function calNavMonth(delta) {
+    let m = state.calendarView.month + delta;
+    let y = state.calendarView.year;
+    if (m < 0) { m += 12; y -= 1; }
+    if (m > 11) { m -= 12; y += 1; }
+    state.calendarView.month = m;
+    state.calendarView.year = y;
+    renderCalendar();
+  }
+  if (calPrevBtn) calPrevBtn.addEventListener('click', () => calNavMonth(-1));
+  if (calNextBtn) calNextBtn.addEventListener('click', () => calNavMonth(1));
+  if (calTodayBtn) calTodayBtn.addEventListener('click', () => {
+    const t = new Date();
+    state.calendarView.year = t.getFullYear();
+    state.calendarView.month = t.getMonth();
+    state.calendarView.selected = todayIso();
+    renderCalendar();
+  });
+
   load();
   updateDirtyIndicator();
   render();
+  // Initialise calendar view to today
+  const _now = new Date();
+  state.calendarView.year = _now.getFullYear();
+  state.calendarView.month = _now.getMonth();
+  state.calendarView.selected = todayIso();
   showView('home');
   setInterval(tick, 1000);
   fetchRemote();
