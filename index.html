@@ -724,6 +724,28 @@
   .btn-ghost:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--danger); }
 
   /* ===== Flashcards ===== */
+  .fc-dirty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow-stack);
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+  }
+  .fc-dirty[hidden] { display: none; }
+  .fc-dirty span {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+  .fc-dirty .btn-primary { padding: 0.55rem 1rem; font-size: 0.78rem; }
+
   .breadcrumb {
     display: flex;
     align-items: center;
@@ -1005,6 +1027,10 @@
     </section>
 
     <section class="view" id="flashcardsView" hidden>
+      <div class="fc-dirty" id="flashcardsDirtyBanner" hidden>
+        <span>Unsaved changes</span>
+        <button type="button" class="btn-primary" id="flashcardsSaveNow">Save now</button>
+      </div>
       <nav class="breadcrumb" id="flashcardsBreadcrumb"></nav>
       <div class="flashcards-body" id="flashcardsBody"></div>
     </section>
@@ -1076,6 +1102,7 @@
   const STORAGE_KEY = 'exam-countdown-exams';
   const QUOTES_KEY = 'exam-countdown-quotes';
   const FLASHCARDS_KEY = 'flashcard-sets';
+  const FLASHCARDS_DIRTY_KEY = 'flashcard-sets-dirty';
   const SAVE_PASSWORD = 'Quack';
   const JSONBIN_BIN_ID = '69ee444c36566621a8f3a85f';
   const JSONBIN_KEY = '$2a$10$VLqtJYJNOq9KDHJ1u8TaXeUqazTjHr0q8P1HnPfOhl/LUJUoHQXNG';
@@ -1109,7 +1136,8 @@
   const state = {
     exams: [],
     flashcardSets: [],
-    flashcardsNav: { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null },
+    flashcardsDirty: false,
+    flashcardsNav: { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
     quoteOrder: []
   };
 
@@ -1162,6 +1190,7 @@
     } catch (e) {
       state.flashcardSets = [];
     }
+    state.flashcardsDirty = localStorage.getItem(FLASHCARDS_DIRTY_KEY) === '1';
     try {
       const rawQuotes = localStorage.getItem(QUOTES_KEY);
       if (rawQuotes) {
@@ -1221,7 +1250,7 @@
         state.exams = record.exams;
         changed = true;
       }
-      if (record && Array.isArray(record.flashcardSets)) {
+      if (record && Array.isArray(record.flashcardSets) && !state.flashcardsDirty) {
         state.flashcardSets = record.flashcardSets;
         changed = true;
       }
@@ -1496,6 +1525,7 @@
   };
 
   function showView(name) {
+    const wasFlashcards = !flashcardsView.hidden;
     homeView.hidden = name !== 'home';
     flashcardsView.hidden = name !== 'flashcards';
     settingsView.hidden = name !== 'settings';
@@ -1509,6 +1539,7 @@
       state.flashcardsNav.mode = null;
     }
     if (name === 'settings') showSubview('exams');
+    if (wasFlashcards && name !== 'flashcards') commitFlashcards();
     closeMenu();
   }
 
@@ -1674,45 +1705,63 @@
   });
   modalForm.addEventListener('submit', (e) => { e.preventDefault(); modalSave(); });
 
-  /* ----- Password gate helper ----- */
-  function withPassword(action, label) {
-    const pwd = window.prompt(`Enter password to ${label}:`);
-    if (pwd === null) return false;
-    if (pwd !== SAVE_PASSWORD) {
-      window.alert('Incorrect password.');
-      return false;
+  /* ----- Dirty tracking + commit ----- */
+  function markDirty() {
+    state.flashcardsDirty = true;
+    localStorage.setItem(FLASHCARDS_DIRTY_KEY, '1');
+    updateDirtyIndicator();
+  }
+  function clearDirty() {
+    state.flashcardsDirty = false;
+    localStorage.removeItem(FLASHCARDS_DIRTY_KEY);
+    updateDirtyIndicator();
+  }
+  async function commitFlashcards({ silentIfClean = true } = {}) {
+    if (!state.flashcardsDirty) {
+      if (!silentIfClean) window.alert('Nothing to save.');
+      return;
     }
-    action();
-    return true;
+    const pwd = window.prompt('Enter password to save changes:');
+    if (pwd === null) return;
+    if (pwd !== SAVE_PASSWORD) {
+      window.alert('Incorrect password. Changes saved locally only.');
+      return;
+    }
+    await pushRemote();
+    clearDirty();
+  }
+  function updateDirtyIndicator() {
+    const banner = document.getElementById('flashcardsDirtyBanner');
+    if (banner) banner.hidden = !state.flashcardsDirty;
   }
 
   /* ----- CRUD ----- */
   function addSet(name) {
     state.flashcardSets.push({ id: newId(), name: name.trim(), subsets: [], cards: [] });
-    save(); pushRemote();
+    save(); markDirty();
   }
   function updateSet(setId, name) {
     const s = findSet(setId); if (!s) return;
-    s.name = name.trim(); save(); pushRemote();
+    s.name = name.trim(); save(); markDirty();
   }
   function deleteSet(setId) {
     state.flashcardSets = state.flashcardSets.filter(s => s.id !== setId);
-    save(); pushRemote();
+    save(); markDirty();
   }
   function addSubset(setId, name) {
     const s = findSet(setId); if (!s) return;
     if (!Array.isArray(s.subsets)) s.subsets = [];
     s.subsets.push({ id: newId(), name: name.trim(), cards: [] });
-    save(); pushRemote();
+    save(); markDirty();
   }
   function updateSubset(setId, subsetId, name) {
     const ss = findSubset(setId, subsetId); if (!ss) return;
-    ss.name = name.trim(); save(); pushRemote();
+    ss.name = name.trim(); save(); markDirty();
   }
   function deleteSubset(setId, subsetId) {
     const s = findSet(setId); if (!s) return;
     s.subsets = s.subsets.filter(ss => ss.id !== subsetId);
-    save(); pushRemote();
+    save(); markDirty();
   }
   function addCard(setId, subsetId, front, back) {
     const card = { id: newId(), front: front.trim(), back: back.trim() };
@@ -1725,7 +1774,7 @@
       if (!Array.isArray(s.cards)) s.cards = [];
       s.cards.push(card);
     }
-    save(); pushRemote();
+    save(); markDirty();
   }
   function updateCard(setId, subsetId, cardId, front, back) {
     const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
@@ -1734,19 +1783,19 @@
     if (!c) return;
     c.front = front.trim();
     c.back = back.trim();
-    save(); pushRemote();
+    save(); markDirty();
   }
   function deleteCard(setId, subsetId, cardId) {
     const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
     if (!container || !Array.isArray(container.cards)) return;
     container.cards = container.cards.filter(c => c.id !== cardId);
-    save(); pushRemote();
+    save(); markDirty();
   }
 
   /* ----- Navigation ----- */
   function flashcardsGoto(nav) {
     state.flashcardsNav = Object.assign(
-      { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null },
+      { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
       nav || {}
     );
     renderFlashcards();
@@ -1788,6 +1837,12 @@
         ssEl.className = 'crumb-current';
       }
       flashcardsBreadcrumb.appendChild(ssEl);
+    }
+    if (nav.combined) {
+      const sepC = document.createElement('span'); sepC.className = 'crumb-sep'; sepC.textContent = '›';
+      flashcardsBreadcrumb.appendChild(sepC);
+      const allEl = document.createElement('span'); allEl.className = 'crumb-current'; allEl.textContent = 'All cards';
+      flashcardsBreadcrumb.appendChild(allEl);
     }
     if (nav.mode === 'review') {
       const sep3 = document.createElement('span'); sep3.className = 'crumb-sep'; sep3.textContent = '›';
@@ -1853,7 +1908,7 @@
       row.querySelector('[data-act="edit"]').addEventListener('click', () => promptSet(s));
       row.querySelector('[data-act="delete"]').addEventListener('click', () => {
         if (!window.confirm(`Delete the set "${s.name}" and everything in it?`)) return;
-        withPassword(() => { deleteSet(s.id); renderFlashcards(); }, 'delete this set');
+        deleteSet(s.id); renderFlashcards();
       });
       list.appendChild(row);
     });
@@ -1894,6 +1949,13 @@
       reviewBtn.addEventListener('click', () => startReview(setId, null));
       toolbar.appendChild(reviewBtn);
     }
+    if (hasSubs && totalCardCount(s) > 0) {
+      const reviewAllBtn = document.createElement('button');
+      reviewAllBtn.className = 'btn-primary';
+      reviewAllBtn.textContent = 'Review all ▸';
+      reviewAllBtn.addEventListener('click', () => startReviewCombined(setId));
+      toolbar.appendChild(reviewAllBtn);
+    }
     flashcardsBody.appendChild(toolbar);
 
     if (hasSubs) {
@@ -1926,7 +1988,7 @@
         row.querySelector('[data-act="edit"]').addEventListener('click', () => promptSubset(setId, ss));
         row.querySelector('[data-act="delete"]').addEventListener('click', () => {
           if (!window.confirm(`Delete subset "${ss.name}" and its cards?`)) return;
-          withPassword(() => { deleteSubset(setId, ss.id); renderFlashcards(); }, 'delete this subset');
+          deleteSubset(setId, ss.id); renderFlashcards();
         });
         list.appendChild(row);
       });
@@ -1995,7 +2057,7 @@
       row.querySelector('[data-act="edit"]').addEventListener('click', () => promptCard(setId, subsetId, c));
       row.querySelector('[data-act="delete"]').addEventListener('click', () => {
         if (!window.confirm(`Delete card "${c.front.slice(0, 40)}"?`)) return;
-        withPassword(() => { deleteCard(setId, subsetId, c.id); renderFlashcards(); }, 'delete this card');
+        deleteCard(setId, subsetId, c.id); renderFlashcards();
       });
       list.appendChild(row);
     });
@@ -2010,8 +2072,24 @@
     flashcardsGoto({ setId, subsetId, mode: 'review', index: 0, flipped: false, order });
   }
 
+  function startReviewCombined(setId) {
+    const s = findSet(setId);
+    if (!s || !setHasSubsets(s)) return;
+    const cards = [];
+    s.subsets.forEach(ss => (ss.cards || []).forEach(c => cards.push({ card: c, subsetId: ss.id })));
+    if (!cards.length) { window.alert('No cards in any subset yet.'); return; }
+    const order = cards.map((_, i) => i);
+    flashcardsGoto({
+      setId, subsetId: null, combined: true,
+      mode: 'review', index: 0, flipped: false, order, cards
+    });
+  }
+
   function reviewCards() {
     const nav = state.flashcardsNav;
+    if (nav.combined && Array.isArray(nav.cards)) {
+      return nav.cards.map(x => x.card);
+    }
     const container = nav.subsetId ? findSubset(nav.setId, nav.subsetId) : findSet(nav.setId);
     return (container && container.cards) ? container.cards : [];
   }
@@ -2056,6 +2134,10 @@
     flashcardsBody.querySelector('.flashcard-face.front .face-text').textContent = card.front;
     flashcardsBody.querySelector('.flashcard-face.back .face-text').textContent = card.back || '(blank)';
 
+    const sourceSubsetId = nav.combined && nav.cards
+      ? nav.cards[nav.order[safeIdx]].subsetId
+      : nav.subsetId;
+
     const cardEl = flashcardsBody.querySelector('#reviewCard');
     cardEl.addEventListener('click', flipReview);
 
@@ -2064,21 +2146,37 @@
     flashcardsBody.querySelector('[data-act="flip"]').addEventListener('click', flipReview);
     flashcardsBody.querySelector('[data-act="shuffle"]').addEventListener('click', shuffleReview);
     flashcardsBody.querySelector('[data-act="edit"]').addEventListener('click', () => {
-      promptCard(nav.setId, nav.subsetId, card);
+      promptCard(nav.setId, sourceSubsetId, card);
     });
     flashcardsBody.querySelector('[data-act="delete"]').addEventListener('click', () => {
       if (!window.confirm(`Delete card "${card.front.slice(0, 40)}"?`)) return;
-      withPassword(() => {
-        deleteCard(nav.setId, nav.subsetId, card.id);
-        const remaining = reviewCards();
-        if (!remaining.length) {
-          flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId });
+      deleteCard(nav.setId, sourceSubsetId, card.id);
+
+      if (nav.combined) {
+        // remove the entry from the snapshot deck
+        const removeAt = nav.order[safeIdx];
+        nav.cards.splice(removeAt, 1);
+        if (!nav.cards.length) {
+          flashcardsGoto({ setId: nav.setId });
           return;
         }
-        const newOrder = remaining.map((_, i) => i);
+        const newOrder = nav.cards.map((_, i) => i);
         const newIdx = Math.min(nav.index, newOrder.length - 1);
-        flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId, mode: 'review', index: newIdx, flipped: false, order: newOrder });
-      }, 'delete this card');
+        flashcardsGoto({
+          setId: nav.setId, combined: true, mode: 'review',
+          index: newIdx, flipped: false, order: newOrder, cards: nav.cards
+        });
+        return;
+      }
+
+      const remaining = reviewCards();
+      if (!remaining.length) {
+        flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId });
+        return;
+      }
+      const newOrder = remaining.map((_, i) => i);
+      const newIdx = Math.min(nav.index, newOrder.length - 1);
+      flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId, mode: 'review', index: newIdx, flipped: false, order: newOrder });
     });
 
     cardEl.focus();
@@ -2126,11 +2224,9 @@
       fields: [{ name: 'name', label: 'Name', value: existing ? existing.name : '', required: true, placeholder: 'e.g. Biology' }],
       onSave: ({ name }) => {
         if (!name) { window.alert('Name is required.'); return false; }
-        return withPassword(() => {
-          if (existing) updateSet(existing.id, name);
-          else addSet(name);
-          renderFlashcards();
-        }, existing ? 'rename this set' : 'save this set');
+        if (existing) updateSet(existing.id, name);
+        else addSet(name);
+        renderFlashcards();
       }
     });
   }
@@ -2140,11 +2236,9 @@
       fields: [{ name: 'name', label: 'Name', value: existing ? existing.name : '', required: true, placeholder: 'e.g. Cells' }],
       onSave: ({ name }) => {
         if (!name) { window.alert('Name is required.'); return false; }
-        return withPassword(() => {
-          if (existing) updateSubset(setId, existing.id, name);
-          else addSubset(setId, name);
-          renderFlashcards();
-        }, existing ? 'rename this subset' : 'save this subset');
+        if (existing) updateSubset(setId, existing.id, name);
+        else addSubset(setId, name);
+        renderFlashcards();
       }
     });
   }
@@ -2157,16 +2251,20 @@
       ],
       onSave: ({ front, back }) => {
         if (!front) { window.alert('Front is required.'); return false; }
-        return withPassword(() => {
-          if (existing) updateCard(setId, subsetId, existing.id, front, back);
-          else addCard(setId, subsetId, front, back);
-          renderFlashcards();
-        }, existing ? 'save card changes' : 'save this card');
+        if (existing) updateCard(setId, subsetId, existing.id, front, back);
+        else addCard(setId, subsetId, front, back);
+        renderFlashcards();
       }
     });
   }
 
+  const saveNowBtn = document.getElementById('flashcardsSaveNow');
+  if (saveNowBtn) {
+    saveNowBtn.addEventListener('click', () => commitFlashcards({ silentIfClean: false }));
+  }
+
   load();
+  updateDirtyIndicator();
   render();
   showView('home');
   setInterval(tick, 1000);
