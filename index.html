@@ -1673,6 +1673,7 @@
       <p class="login-error" id="loginError" hidden>Wrong username or password.</p>
     </div>
   </div>
+  <template id="appShell">
   <header>
     <h1 id="pageTitle">Study Mate</h1>
     <p id="pageTagline">Stay calm. Stay prepared. Track every exam in one place.</p>
@@ -1773,6 +1774,7 @@
       </div>
     </div>
   </div>
+  </template>
 
 <script>
 (() => {
@@ -1810,6 +1812,7 @@
     e.preventDefault();
     if (loginUserInput.value === LOGIN_USER && loginPassInput.value === LOGIN_PASS) {
       sessionStorage.setItem(LOGIN_KEY, '1');
+      mountAndInit();
       hideLoginGate();
       loginError.hidden = true;
       loginUserInput.value = '';
@@ -1821,6 +1824,16 @@
     }
   });
 
+  let _mounted = false;
+  function mountAndInit() {
+    if (_mounted) return;
+    _mounted = true;
+    const tpl = document.getElementById('appShell');
+    document.body.appendChild(tpl.content.cloneNode(true));
+    initApp();
+  }
+
+  function initApp() {
   const JSONBIN_BIN_ID = '69ee444c36566621a8f3a85f';
   const JSONBIN_KEY = '$2a$10$VLqtJYJNOq9KDHJ1u8TaXeUqazTjHr0q8P1HnPfOhl/LUJUoHQXNG';
   const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID;
@@ -3579,9 +3592,14 @@
   setInterval(tick, 1000);
   fetchRemote();
   window.addEventListener('online', fetchRemote);
+  } /* end initApp */
 
-  if (isLoggedIn()) hideLoginGate();
-  else showLoginGate();
+  if (isLoggedIn()) {
+    mountAndInit();
+    hideLoginGate();
+  } else {
+    showLoginGate();
+  }
 })();
 </script>
 </body>
