@@ -1867,7 +1867,7 @@
     exams: [],
     flashcardSets: [],
     flashcardsDirty: false,
-    flashcardsNav: { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
+    flashcardsNav: { path: [], mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
     calendarEvents: [],
     calendarView: { year: 0, month: 0, selected: null, mode: 'month' },
     quoteOrder: []
@@ -2436,22 +2436,41 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
-  function findSet(setId) {
-    return state.flashcardSets.find(s => s.id === setId) || null;
-  }
-  function findSubset(setId, subsetId) {
-    const s = findSet(setId);
-    if (!s || !Array.isArray(s.subsets)) return null;
-    return s.subsets.find(ss => ss.id === subsetId) || null;
-  }
-  function setHasCards(s) { return Array.isArray(s.cards) && s.cards.length > 0; }
-  function setHasSubsets(s) { return Array.isArray(s.subsets) && s.subsets.length > 0; }
-  function totalCardCount(s) {
-    if (!s) return 0;
-    if (setHasSubsets(s)) {
-      return s.subsets.reduce((acc, ss) => acc + (ss.cards ? ss.cards.length : 0), 0);
+  /* Resolve a node by its path. path=[] returns null (means root container). */
+  function resolvePath(path) {
+    if (!path || !path.length) return null;
+    let node = state.flashcardSets.find(s => s.id === path[0]);
+    for (let i = 1; i < path.length; i++) {
+      if (!node || !Array.isArray(node.subsets)) return null;
+      node = node.subsets.find(s => s.id === path[i]);
     }
-    return s.cards ? s.cards.length : 0;
+    return node || null;
+  }
+  /* Container the path's leaf node sits inside (used for delete / replacement). */
+  function resolveParentCollection(path) {
+    if (!path || !path.length) return null;
+    if (path.length === 1) return state.flashcardSets;
+    const parent = resolvePath(path.slice(0, -1));
+    if (!parent) return null;
+    if (!Array.isArray(parent.subsets)) parent.subsets = [];
+    return parent.subsets;
+  }
+  /* The children collection for a node at path (root if path is empty). */
+  function resolveChildrenCollection(path) {
+    if (!path || !path.length) return state.flashcardSets;
+    const node = resolvePath(path);
+    if (!node) return null;
+    if (!Array.isArray(node.subsets)) node.subsets = [];
+    return node.subsets;
+  }
+
+  function nodeHasCards(n) { return !!(n && Array.isArray(n.cards) && n.cards.length); }
+  function nodeHasSubsets(n) { return !!(n && Array.isArray(n.subsets) && n.subsets.length); }
+  function totalCardCount(n) {
+    if (!n) return 0;
+    let total = (n.cards || []).length;
+    if (Array.isArray(n.subsets)) n.subsets.forEach(c => { total += totalCardCount(c); });
+    return total;
   }
 
   /* ----- Edit modal (reusable form) ----- */
@@ -2569,67 +2588,51 @@
     if (banner) banner.hidden = !state.flashcardsDirty;
   }
 
-  /* ----- CRUD ----- */
-  function addSet(name) {
-    state.flashcardSets.push({ id: newId(), name: name.trim(), subsets: [], cards: [] });
+  /* ----- CRUD (path-based, recursive nesting) ----- */
+  function addNode(parentPath, name) {
+    const coll = resolveChildrenCollection(parentPath);
+    if (!coll) return;
+    coll.push({ id: newId(), name: name.trim(), subsets: [], cards: [] });
     save(); markDirty();
   }
-  function updateSet(setId, name) {
-    const s = findSet(setId); if (!s) return;
-    s.name = name.trim(); save(); markDirty();
-  }
-  function deleteSet(setId) {
-    state.flashcardSets = state.flashcardSets.filter(s => s.id !== setId);
+  function updateNode(path, name) {
+    const n = resolvePath(path); if (!n) return;
+    n.name = name.trim();
     save(); markDirty();
   }
-  function addSubset(setId, name) {
-    const s = findSet(setId); if (!s) return;
-    if (!Array.isArray(s.subsets)) s.subsets = [];
-    s.subsets.push({ id: newId(), name: name.trim(), cards: [] });
+  function deleteNode(path) {
+    const parent = resolveParentCollection(path);
+    if (!parent || !path.length) return;
+    const id = path[path.length - 1];
+    const idx = parent.findIndex(n => n.id === id);
+    if (idx === -1) return;
+    parent.splice(idx, 1);
     save(); markDirty();
   }
-  function updateSubset(setId, subsetId, name) {
-    const ss = findSubset(setId, subsetId); if (!ss) return;
-    ss.name = name.trim(); save(); markDirty();
-  }
-  function deleteSubset(setId, subsetId) {
-    const s = findSet(setId); if (!s) return;
-    s.subsets = s.subsets.filter(ss => ss.id !== subsetId);
+  function addCard(containerPath, front, back) {
+    const node = resolvePath(containerPath); if (!node) return;
+    if (!Array.isArray(node.cards)) node.cards = [];
+    node.cards.push({ id: newId(), front: front.trim(), back: back.trim() });
     save(); markDirty();
   }
-  function addCard(setId, subsetId, front, back) {
-    const card = { id: newId(), front: front.trim(), back: back.trim() };
-    if (subsetId) {
-      const ss = findSubset(setId, subsetId); if (!ss) return;
-      if (!Array.isArray(ss.cards)) ss.cards = [];
-      ss.cards.push(card);
-    } else {
-      const s = findSet(setId); if (!s) return;
-      if (!Array.isArray(s.cards)) s.cards = [];
-      s.cards.push(card);
-    }
-    save(); markDirty();
-  }
-  function updateCard(setId, subsetId, cardId, front, back) {
-    const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
-    if (!container || !Array.isArray(container.cards)) return;
-    const c = container.cards.find(x => x.id === cardId);
+  function updateCard(containerPath, cardId, front, back) {
+    const node = resolvePath(containerPath); if (!node || !Array.isArray(node.cards)) return;
+    const c = node.cards.find(x => x.id === cardId);
     if (!c) return;
     c.front = front.trim();
     c.back = back.trim();
     save(); markDirty();
   }
-  function deleteCard(setId, subsetId, cardId) {
-    const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
-    if (!container || !Array.isArray(container.cards)) return;
-    container.cards = container.cards.filter(c => c.id !== cardId);
+  function deleteCard(containerPath, cardId) {
+    const node = resolvePath(containerPath); if (!node || !Array.isArray(node.cards)) return;
+    node.cards = node.cards.filter(c => c.id !== cardId);
     save(); markDirty();
   }
 
   /* ----- Navigation ----- */
   function flashcardsGoto(nav) {
     state.flashcardsNav = Object.assign(
-      { setId: null, subsetId: null, mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
+      { path: [], mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
       nav || {}
     );
     renderFlashcards();
@@ -2644,43 +2647,32 @@
     root.addEventListener('click', () => flashcardsGoto({}));
     flashcardsBreadcrumb.appendChild(root);
 
-    if (nav.setId) {
-      const sep1 = document.createElement('span'); sep1.className = 'crumb-sep'; sep1.textContent = '›';
-      flashcardsBreadcrumb.appendChild(sep1);
-      const s = findSet(nav.setId);
-      const setEl = document.createElement(nav.subsetId || nav.mode ? 'button' : 'span');
-      setEl.textContent = s ? s.name : 'Set';
-      if (setEl.tagName === 'BUTTON') {
-        setEl.type = 'button';
-        setEl.addEventListener('click', () => flashcardsGoto({ setId: nav.setId }));
+    for (let i = 0; i < nav.path.length; i++) {
+      const subPath = nav.path.slice(0, i + 1);
+      const node = resolvePath(subPath);
+      const isLast = i === nav.path.length - 1;
+      const sep = document.createElement('span'); sep.className = 'crumb-sep'; sep.textContent = '›';
+      flashcardsBreadcrumb.appendChild(sep);
+      const clickable = !isLast || nav.mode || nav.combined;
+      const el = document.createElement(clickable ? 'button' : 'span');
+      el.textContent = node ? node.name : '…';
+      if (clickable) {
+        el.type = 'button';
+        el.addEventListener('click', () => flashcardsGoto({ path: subPath }));
       } else {
-        setEl.className = 'crumb-current';
+        el.className = 'crumb-current';
       }
-      flashcardsBreadcrumb.appendChild(setEl);
-    }
-    if (nav.subsetId) {
-      const sep2 = document.createElement('span'); sep2.className = 'crumb-sep'; sep2.textContent = '›';
-      flashcardsBreadcrumb.appendChild(sep2);
-      const ss = findSubset(nav.setId, nav.subsetId);
-      const ssEl = document.createElement(nav.mode ? 'button' : 'span');
-      ssEl.textContent = ss ? ss.name : 'Subset';
-      if (ssEl.tagName === 'BUTTON') {
-        ssEl.type = 'button';
-        ssEl.addEventListener('click', () => flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId }));
-      } else {
-        ssEl.className = 'crumb-current';
-      }
-      flashcardsBreadcrumb.appendChild(ssEl);
+      flashcardsBreadcrumb.appendChild(el);
     }
     if (nav.combined) {
-      const sepC = document.createElement('span'); sepC.className = 'crumb-sep'; sepC.textContent = '›';
-      flashcardsBreadcrumb.appendChild(sepC);
+      const sep = document.createElement('span'); sep.className = 'crumb-sep'; sep.textContent = '›';
+      flashcardsBreadcrumb.appendChild(sep);
       const allEl = document.createElement('span'); allEl.className = 'crumb-current'; allEl.textContent = 'All cards';
       flashcardsBreadcrumb.appendChild(allEl);
     }
     if (nav.mode === 'review') {
-      const sep3 = document.createElement('span'); sep3.className = 'crumb-sep'; sep3.textContent = '›';
-      flashcardsBreadcrumb.appendChild(sep3);
+      const sep = document.createElement('span'); sep.className = 'crumb-sep'; sep.textContent = '›';
+      flashcardsBreadcrumb.appendChild(sep);
       const cur = document.createElement('span'); cur.className = 'crumb-current'; cur.textContent = 'Review';
       flashcardsBreadcrumb.appendChild(cur);
     }
@@ -2692,9 +2684,53 @@
     buildBreadcrumb();
     const nav = state.flashcardsNav;
     if (nav.mode === 'review') return renderReview();
-    if (nav.subsetId) return renderCardList(nav.setId, nav.subsetId);
-    if (nav.setId) return renderSetDetail(nav.setId);
-    return renderSetsList();
+    if (!nav.path.length) return renderSetsList();
+    return renderNodeDetail(nav.path);
+  }
+
+  function buildNodeRow(node, nodePath) {
+    const row = document.createElement('div');
+    row.className = 'fc-row';
+    const hasSubs = nodeHasSubsets(node);
+    const hasCards = nodeHasCards(node);
+    const total = totalCardCount(node);
+    const reviewable = total > 0;
+
+    row.innerHTML = `
+      <div class="fc-row-main">
+        <p class="fc-row-title"></p>
+        <div class="fc-row-meta"></div>
+      </div>
+      <div class="fc-row-actions">
+        ${reviewable ? '<button class="icon-btn" data-act="review" title="Review">▸</button>' : ''}
+        <button class="icon-btn" data-act="edit" title="Rename">✎</button>
+        <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
+      </div>`;
+    row.querySelector('.fc-row-title').textContent = node.name;
+    const parts = [];
+    if (hasSubs) parts.push(`${node.subsets.length} subset${node.subsets.length === 1 ? '' : 's'}`);
+    if (hasCards) parts.push(`${node.cards.length} card${node.cards.length === 1 ? '' : 's'}`);
+    if (hasSubs && total) parts.push(`${total} total`);
+    if (!parts.length) parts.push('empty');
+    row.querySelector('.fc-row-meta').textContent = parts.join(' · ');
+
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('[data-act]')) return;
+      flashcardsGoto({ path: nodePath });
+    });
+    const reviewBtn = row.querySelector('[data-act="review"]');
+    if (reviewBtn) {
+      reviewBtn.addEventListener('click', () => {
+        if (hasSubs) startReviewCombined(nodePath);
+        else startReview(nodePath);
+      });
+    }
+    row.querySelector('[data-act="edit"]').addEventListener('click', () => promptNode(nodePath.slice(0, -1), node, nodePath));
+    row.querySelector('[data-act="delete"]').addEventListener('click', () => {
+      if (!window.confirm(`Delete "${node.name}" and everything in it?`)) return;
+      deleteNode(nodePath); renderFlashcards();
+    });
+    return row;
   }
 
   function renderSetsList() {
@@ -2704,7 +2740,7 @@
     const addBtn = document.createElement('button');
     addBtn.className = 'btn-primary';
     addBtn.textContent = '+ New set';
-    addBtn.addEventListener('click', () => promptSet());
+    addBtn.addEventListener('click', () => promptNode([], null));
     toolbar.appendChild(addBtn);
     flashcardsBody.appendChild(toolbar);
 
@@ -2718,76 +2754,49 @@
 
     const list = document.createElement('div');
     list.className = 'fc-list';
-    state.flashcardSets.forEach(s => {
-      const row = document.createElement('div');
-      row.className = 'fc-row';
-      row.innerHTML = `
-        <div class="fc-row-main">
-          <p class="fc-row-title"></p>
-          <div class="fc-row-meta"></div>
-        </div>
-        <div class="fc-row-actions">
-          <button class="icon-btn" data-act="edit" title="Rename">✎</button>
-          <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
-        </div>`;
-      row.querySelector('.fc-row-title').textContent = s.name;
-      const meta = setHasSubsets(s)
-        ? `${s.subsets.length} subset${s.subsets.length === 1 ? '' : 's'} · ${totalCardCount(s)} cards`
-        : `${(s.cards || []).length} card${(s.cards || []).length === 1 ? '' : 's'}`;
-      row.querySelector('.fc-row-meta').textContent = meta;
-      row.addEventListener('click', (e) => {
-        if (e.target.closest('[data-act]')) return;
-        flashcardsGoto({ setId: s.id });
-      });
-      row.querySelector('[data-act="edit"]').addEventListener('click', () => promptSet(s));
-      row.querySelector('[data-act="delete"]').addEventListener('click', () => {
-        if (!window.confirm(`Delete the set "${s.name}" and everything in it?`)) return;
-        deleteSet(s.id); renderFlashcards();
-      });
-      list.appendChild(row);
-    });
+    state.flashcardSets.forEach(s => list.appendChild(buildNodeRow(s, [s.id])));
     flashcardsBody.appendChild(list);
   }
 
-  function renderSetDetail(setId) {
-    const s = findSet(setId);
+  function renderNodeDetail(path) {
+    const node = resolvePath(path);
     flashcardsBody.innerHTML = '';
-    if (!s) {
+    if (!node) {
       flashcardsGoto({});
       return;
     }
     const toolbar = document.createElement('div');
     toolbar.className = 'fc-toolbar';
 
-    const hasSubs = setHasSubsets(s);
-    const hasCards = setHasCards(s);
+    const hasSubs = nodeHasSubsets(node);
+    const hasCards = nodeHasCards(node);
 
     if (hasSubs || (!hasSubs && !hasCards)) {
       const addSubBtn = document.createElement('button');
       addSubBtn.className = 'btn-primary';
       addSubBtn.textContent = '+ New subset';
-      addSubBtn.addEventListener('click', () => promptSubset(setId));
+      addSubBtn.addEventListener('click', () => promptNode(path, null));
       toolbar.appendChild(addSubBtn);
     }
     if (hasCards || (!hasSubs && !hasCards)) {
       const addCardBtn = document.createElement('button');
       addCardBtn.className = 'btn-primary';
       addCardBtn.textContent = '+ New card';
-      addCardBtn.addEventListener('click', () => promptCard(setId, null));
+      addCardBtn.addEventListener('click', () => promptCard(path, null));
       toolbar.appendChild(addCardBtn);
     }
     if (hasCards) {
       const reviewBtn = document.createElement('button');
       reviewBtn.className = 'btn-primary';
       reviewBtn.textContent = 'Review ▸';
-      reviewBtn.addEventListener('click', () => startReview(setId, null));
+      reviewBtn.addEventListener('click', () => startReview(path));
       toolbar.appendChild(reviewBtn);
     }
-    if (hasSubs && totalCardCount(s) > 0) {
+    if (hasSubs && totalCardCount(node) > 0) {
       const reviewAllBtn = document.createElement('button');
       reviewAllBtn.className = 'btn-primary';
       reviewAllBtn.textContent = 'Review all ▸';
-      reviewAllBtn.addEventListener('click', () => startReviewCombined(setId));
+      reviewAllBtn.addEventListener('click', () => startReviewCombined(path));
       toolbar.appendChild(reviewAllBtn);
     }
     flashcardsBody.appendChild(toolbar);
@@ -2795,75 +2804,19 @@
     if (hasSubs) {
       const list = document.createElement('div');
       list.className = 'fc-list';
-      s.subsets.forEach(ss => {
-        const row = document.createElement('div');
-        row.className = 'fc-row';
-        row.innerHTML = `
-          <div class="fc-row-main">
-            <p class="fc-row-title"></p>
-            <div class="fc-row-meta"></div>
-          </div>
-          <div class="fc-row-actions">
-            <button class="icon-btn" data-act="review" title="Review">▸</button>
-            <button class="icon-btn" data-act="edit" title="Rename">✎</button>
-            <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
-          </div>`;
-        row.querySelector('.fc-row-title').textContent = ss.name;
-        const cnt = (ss.cards || []).length;
-        row.querySelector('.fc-row-meta').textContent = `${cnt} card${cnt === 1 ? '' : 's'}`;
-        row.addEventListener('click', (e) => {
-          if (e.target.closest('[data-act]')) return;
-          flashcardsGoto({ setId, subsetId: ss.id });
-        });
-        row.querySelector('[data-act="review"]').addEventListener('click', () => {
-          if (!cnt) { window.alert('No cards in this subset yet.'); return; }
-          startReview(setId, ss.id);
-        });
-        row.querySelector('[data-act="edit"]').addEventListener('click', () => promptSubset(setId, ss));
-        row.querySelector('[data-act="delete"]').addEventListener('click', () => {
-          if (!window.confirm(`Delete subset "${ss.name}" and its cards?`)) return;
-          deleteSubset(setId, ss.id); renderFlashcards();
-        });
-        list.appendChild(row);
-      });
+      node.subsets.forEach(child => list.appendChild(buildNodeRow(child, [...path, child.id])));
       flashcardsBody.appendChild(list);
     } else if (hasCards) {
-      renderCardListInto(flashcardsBody, setId, null, s.cards);
+      renderCardListInto(flashcardsBody, path, node.cards);
     } else {
       const empty = document.createElement('div');
       empty.className = 'fc-empty';
-      empty.textContent = 'Empty set. Add a subset to organise into groups, or add a card directly.';
+      empty.textContent = 'Empty. Add a subset to organise into groups, or add a card directly.';
       flashcardsBody.appendChild(empty);
     }
   }
 
-  function renderCardList(setId, subsetId) {
-    const ss = findSubset(setId, subsetId);
-    flashcardsBody.innerHTML = '';
-    if (!ss) {
-      flashcardsGoto({ setId });
-      return;
-    }
-    const toolbar = document.createElement('div');
-    toolbar.className = 'fc-toolbar';
-    const addBtn = document.createElement('button');
-    addBtn.className = 'btn-primary';
-    addBtn.textContent = '+ New card';
-    addBtn.addEventListener('click', () => promptCard(setId, subsetId));
-    toolbar.appendChild(addBtn);
-    const cnt = (ss.cards || []).length;
-    if (cnt) {
-      const reviewBtn = document.createElement('button');
-      reviewBtn.className = 'btn-primary';
-      reviewBtn.textContent = 'Review ▸';
-      reviewBtn.addEventListener('click', () => startReview(setId, subsetId));
-      toolbar.appendChild(reviewBtn);
-    }
-    flashcardsBody.appendChild(toolbar);
-    renderCardListInto(flashcardsBody, setId, subsetId, ss.cards || []);
-  }
-
-  function renderCardListInto(container, setId, subsetId, cards) {
+  function renderCardListInto(container, containerPath, cards) {
     if (!cards.length) {
       const empty = document.createElement('div');
       empty.className = 'fc-empty';
@@ -2888,34 +2841,41 @@
       row.querySelector('.fc-row-title').textContent = c.front;
       row.querySelector('.fc-row-meta').textContent = (c.back || '').slice(0, 80);
       row.style.cursor = 'default';
-      row.querySelector('[data-act="edit"]').addEventListener('click', () => promptCard(setId, subsetId, c));
+      row.querySelector('[data-act="edit"]').addEventListener('click', () => promptCard(containerPath, c));
       row.querySelector('[data-act="delete"]').addEventListener('click', () => {
         if (!window.confirm(`Delete card "${c.front.slice(0, 40)}"?`)) return;
-        deleteCard(setId, subsetId, c.id); renderFlashcards();
+        deleteCard(containerPath, c.id); renderFlashcards();
       });
       list.appendChild(row);
     });
     container.appendChild(list);
   }
 
-  function startReview(setId, subsetId) {
-    const container = subsetId ? findSubset(setId, subsetId) : findSet(setId);
-    const cards = (container && container.cards) ? container.cards : [];
+  function startReview(path) {
+    const node = resolvePath(path);
+    const cards = (node && node.cards) ? node.cards : [];
     if (!cards.length) { window.alert('No cards to review.'); return; }
     const order = cards.map((_, i) => i);
-    flashcardsGoto({ setId, subsetId, mode: 'review', index: 0, flipped: false, order });
+    flashcardsGoto({ path, mode: 'review', index: 0, flipped: false, order });
   }
 
-  function startReviewCombined(setId) {
-    const s = findSet(setId);
-    if (!s || !setHasSubsets(s)) return;
-    const cards = [];
-    s.subsets.forEach(ss => (ss.cards || []).forEach(c => cards.push({ card: c, subsetId: ss.id })));
-    if (!cards.length) { window.alert('No cards in any subset yet.'); return; }
-    const order = cards.map((_, i) => i);
+  function startReviewCombined(path) {
+    const node = resolvePath(path);
+    if (!node) return;
+    const collected = [];
+    (function walk(n, currentPath) {
+      if (Array.isArray(n.cards) && n.cards.length) {
+        n.cards.forEach(c => collected.push({ card: c, containerPath: currentPath.slice() }));
+      }
+      if (Array.isArray(n.subsets)) {
+        n.subsets.forEach(child => walk(child, [...currentPath, child.id]));
+      }
+    })(node, path.slice());
+    if (!collected.length) { window.alert('No cards in this group yet.'); return; }
+    const order = collected.map((_, i) => i);
     flashcardsGoto({
-      setId, subsetId: null, combined: true,
-      mode: 'review', index: 0, flipped: false, order, cards
+      path, combined: true, mode: 'review',
+      index: 0, flipped: false, order, cards: collected
     });
   }
 
@@ -2924,20 +2884,20 @@
     if (nav.combined && Array.isArray(nav.cards)) {
       return nav.cards.map(x => x.card);
     }
-    const container = nav.subsetId ? findSubset(nav.setId, nav.subsetId) : findSet(nav.setId);
-    return (container && container.cards) ? container.cards : [];
+    const node = resolvePath(nav.path);
+    return (node && node.cards) ? node.cards : [];
   }
 
   function renderReview() {
     const nav = state.flashcardsNav;
     const cards = reviewCards();
     if (!cards.length || !nav.order || !nav.order.length) {
-      flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId });
+      flashcardsGoto({ path: nav.path });
       return;
     }
     const safeIdx = Math.min(nav.index, nav.order.length - 1);
     const card = cards[nav.order[safeIdx]];
-    if (!card) { flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId }); return; }
+    if (!card) { flashcardsGoto({ path: nav.path }); return; }
 
     flashcardsBody.innerHTML = `
       <div class="fc-review">
@@ -2968,9 +2928,9 @@
     flashcardsBody.querySelector('.flashcard-face.front .face-text').textContent = card.front;
     flashcardsBody.querySelector('.flashcard-face.back .face-text').textContent = card.back || '(blank)';
 
-    const sourceSubsetId = nav.combined && nav.cards
-      ? nav.cards[nav.order[safeIdx]].subsetId
-      : nav.subsetId;
+    const containerPath = nav.combined && nav.cards
+      ? nav.cards[nav.order[safeIdx]].containerPath
+      : nav.path;
 
     const cardEl = flashcardsBody.querySelector('#reviewCard');
     cardEl.addEventListener('click', flipReview);
@@ -2980,24 +2940,23 @@
     flashcardsBody.querySelector('[data-act="flip"]').addEventListener('click', flipReview);
     flashcardsBody.querySelector('[data-act="shuffle"]').addEventListener('click', shuffleReview);
     flashcardsBody.querySelector('[data-act="edit"]').addEventListener('click', () => {
-      promptCard(nav.setId, sourceSubsetId, card);
+      promptCard(containerPath, card);
     });
     flashcardsBody.querySelector('[data-act="delete"]').addEventListener('click', () => {
       if (!window.confirm(`Delete card "${card.front.slice(0, 40)}"?`)) return;
-      deleteCard(nav.setId, sourceSubsetId, card.id);
+      deleteCard(containerPath, card.id);
 
       if (nav.combined) {
-        // remove the entry from the snapshot deck
         const removeAt = nav.order[safeIdx];
         nav.cards.splice(removeAt, 1);
         if (!nav.cards.length) {
-          flashcardsGoto({ setId: nav.setId });
+          flashcardsGoto({ path: nav.path });
           return;
         }
         const newOrder = nav.cards.map((_, i) => i);
         const newIdx = Math.min(nav.index, newOrder.length - 1);
         flashcardsGoto({
-          setId: nav.setId, combined: true, mode: 'review',
+          path: nav.path, combined: true, mode: 'review',
           index: newIdx, flipped: false, order: newOrder, cards: nav.cards
         });
         return;
@@ -3005,12 +2964,12 @@
 
       const remaining = reviewCards();
       if (!remaining.length) {
-        flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId });
+        flashcardsGoto({ path: nav.path });
         return;
       }
       const newOrder = remaining.map((_, i) => i);
       const newIdx = Math.min(nav.index, newOrder.length - 1);
-      flashcardsGoto({ setId: nav.setId, subsetId: nav.subsetId, mode: 'review', index: newIdx, flipped: false, order: newOrder });
+      flashcardsGoto({ path: nav.path, mode: 'review', index: newIdx, flipped: false, order: newOrder });
     });
 
     cardEl.focus();
@@ -3052,31 +3011,27 @@
   });
 
   /* ----- Edit prompts ----- */
-  function promptSet(existing) {
+  function promptNode(parentPath, existing, nodePath) {
+    const isRoot = parentPath.length === 0;
+    const verb = existing ? 'Rename' : 'New';
+    const kind = isRoot ? 'set' : 'subset';
     openModal({
-      title: existing ? 'Rename set' : 'New set',
-      fields: [{ name: 'name', label: 'Name', value: existing ? existing.name : '', required: true, placeholder: 'e.g. Biology' }],
+      title: `${verb} ${kind}`,
+      fields: [{
+        name: 'name', label: 'Name',
+        value: existing ? existing.name : '',
+        required: true,
+        placeholder: isRoot ? 'e.g. Biology' : 'e.g. Cells'
+      }],
       onSave: ({ name }) => {
         if (!name) { window.alert('Name is required.'); return false; }
-        if (existing) updateSet(existing.id, name);
-        else addSet(name);
+        if (existing) updateNode(nodePath, name);
+        else addNode(parentPath, name);
         renderFlashcards();
       }
     });
   }
-  function promptSubset(setId, existing) {
-    openModal({
-      title: existing ? 'Rename subset' : 'New subset',
-      fields: [{ name: 'name', label: 'Name', value: existing ? existing.name : '', required: true, placeholder: 'e.g. Cells' }],
-      onSave: ({ name }) => {
-        if (!name) { window.alert('Name is required.'); return false; }
-        if (existing) updateSubset(setId, existing.id, name);
-        else addSubset(setId, name);
-        renderFlashcards();
-      }
-    });
-  }
-  function promptCard(setId, subsetId, existing) {
+  function promptCard(containerPath, existing) {
     openModal({
       title: existing ? 'Edit card' : 'New card',
       fields: [
@@ -3085,8 +3040,8 @@
       ],
       onSave: ({ front, back }) => {
         if (!front) { window.alert('Front is required.'); return false; }
-        if (existing) updateCard(setId, subsetId, existing.id, front, back);
-        else addCard(setId, subsetId, front, back);
+        if (existing) updateCard(containerPath, existing.id, front, back);
+        else addCard(containerPath, front, back);
         renderFlashcards();
       }
     });
