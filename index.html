@@ -1926,6 +1926,22 @@
   const LOGIN_USER = 'Teeg';
   const LOGIN_PASS = 'Ghost';
   const LOGIN_KEY = 'revision-hub-auth';
+  const FLASHCARDS_UNLOCK_KEY = 'flashcards-unlocked';
+
+  function isFlashcardsUnlocked() {
+    return sessionStorage.getItem(FLASHCARDS_UNLOCK_KEY) === '1';
+  }
+  function tryUnlockFlashcards() {
+    if (isFlashcardsUnlocked()) return true;
+    const pwd = window.prompt('Enter password to open Flashcards:');
+    if (pwd === null) return false;
+    if (pwd !== SAVE_PASSWORD) {
+      window.alert('Incorrect password.');
+      return false;
+    }
+    sessionStorage.setItem(FLASHCARDS_UNLOCK_KEY, '1');
+    return true;
+  }
 
   /* ===== Login gate ===== */
   const loginGate = document.getElementById('loginGate');
@@ -2467,6 +2483,12 @@
   };
 
   function showView(name) {
+    if (name === 'flashcards' && !isFlashcardsUnlocked()) {
+      if (!tryUnlockFlashcards()) {
+        closeMenu();
+        return;
+      }
+    }
     const wasFlashcards = !flashcardsView.hidden;
     const calendarEl = document.getElementById('calendarView');
     homeView.hidden = name !== 'home';
@@ -2713,12 +2735,6 @@
       if (!silentIfClean) window.alert('Nothing to save.');
       return;
     }
-    const pwd = window.prompt('Enter password to save changes:');
-    if (pwd === null) return;
-    if (pwd !== SAVE_PASSWORD) {
-      window.alert('Incorrect password. Changes saved locally only.');
-      return;
-    }
     await pushRemote();
     clearDirty();
   }
@@ -2960,27 +2976,44 @@
       addCardBtn.addEventListener('click', () => promptCard(path, null));
       toolbar.appendChild(addCardBtn);
     }
-    if (hasCards || (hasSubs && totalCardCount(node) > 0)) {
+    const counts = pileCounts(path);
+    const defaultDeckSize = counts.unsorted + counts.fluke + counts.dontKnow;
+    if (defaultDeckSize > 0) {
       const reviewBtn = document.createElement('button');
       reviewBtn.className = 'btn-primary';
-      reviewBtn.textContent = hasSubs ? 'Review all ▸' : 'Review ▸';
-      reviewBtn.addEventListener('click', () => startReview(path));
+      reviewBtn.textContent = `Review (${defaultDeckSize}) ▸`;
+      reviewBtn.title = "Fluke + don't-know + unsorted (skips known cards)";
+      reviewBtn.addEventListener('click', () => startReview(path, { filter: 'default' }));
       toolbar.appendChild(reviewBtn);
     }
-    const counts = pileCounts(path);
+    if (counts.total > 0 && counts.know > 0) {
+      const allBtn = document.createElement('button');
+      allBtn.className = 'btn-primary';
+      allBtn.textContent = `Review all 3 (${counts.total}) ▸`;
+      allBtn.title = 'Every card, with its pile shown';
+      allBtn.addEventListener('click', () => startReview(path, { filter: null }));
+      toolbar.appendChild(allBtn);
+    }
     if (counts.dontKnow > 0) {
       const dkBtn = document.createElement('button');
       dkBtn.className = 'btn-primary';
-      dkBtn.textContent = `Review don't-know (${counts.dontKnow}) ▸`;
+      dkBtn.textContent = `Don't-know (${counts.dontKnow}) ▸`;
       dkBtn.addEventListener('click', () => startReview(path, { filter: 'dontKnow' }));
       toolbar.appendChild(dkBtn);
     }
     if (counts.fluke > 0) {
       const flBtn = document.createElement('button');
       flBtn.className = 'btn-primary';
-      flBtn.textContent = `Review fluke (${counts.fluke}) ▸`;
+      flBtn.textContent = `Fluke (${counts.fluke}) ▸`;
       flBtn.addEventListener('click', () => startReview(path, { filter: 'fluke' }));
       toolbar.appendChild(flBtn);
+    }
+    if (counts.know > 0) {
+      const knBtn = document.createElement('button');
+      knBtn.className = 'btn-primary';
+      knBtn.textContent = `Known (${counts.know}) ▸`;
+      knBtn.addEventListener('click', () => startReview(path, { filter: 'know' }));
+      toolbar.appendChild(knBtn);
     }
     flashcardsBody.appendChild(toolbar);
 
@@ -3052,11 +3085,15 @@
     let deck = all;
     if (opts.filter === 'dontKnow' || opts.filter === 'fluke' || opts.filter === 'know') {
       deck = all.filter(x => x.card.pile === opts.filter);
+    } else if (opts.filter === 'default') {
+      // Everything except known cards (fluke + don't-know + unsorted)
+      deck = all.filter(x => x.card.pile !== 'know');
     }
     if (!deck.length) {
       const label = opts.filter === 'dontKnow' ? "don't-know"
         : opts.filter === 'fluke' ? "fluke"
         : opts.filter === 'know' ? "know"
+        : opts.filter === 'default' ? 'unmastered'
         : null;
       window.alert(label ? `No cards in the ${label} pile yet.` : 'No cards to review.');
       return;
@@ -3091,9 +3128,13 @@
     const card = cards[nav.order[safeIdx]];
     if (!card) { flashcardsGoto({ path: nav.path }); return; }
 
-    const pileLabel = card.pile === 'know' ? '✓ Known'
-      : card.pile === 'fluke' ? '~ Fluke'
-      : card.pile === 'dontKnow' ? '✗ Don’t know'
+    const pileLabel = card.pile === 'know' ? 'Know'
+      : card.pile === 'fluke' ? 'Fluke'
+      : card.pile === 'dontKnow' ? 'Don’t know'
+      : '';
+    const pileSymbol = card.pile === 'know' ? '✓'
+      : card.pile === 'fluke' ? '~'
+      : card.pile === 'dontKnow' ? '✗'
       : '';
 
     flashcardsBody.innerHTML = `
@@ -3126,8 +3167,17 @@
         </div>
       </div>`;
 
-    flashcardsBody.querySelector('.fc-position').textContent =
-      `Card ${safeIdx + 1} of ${nav.order.length}` + (pileLabel ? ` · ${pileLabel}` : '');
+    const positionEl = flashcardsBody.querySelector('.fc-position');
+    positionEl.textContent = `Card ${safeIdx + 1} of ${nav.order.length}`;
+    if (card.pile) {
+      positionEl.appendChild(document.createTextNode(' · '));
+      const chip = document.createElement('span');
+      chip.className = 'fc-pile-chip ' + card.pile;
+      chip.textContent = pileSymbol;
+      chip.title = 'Currently in: ' + pileLabel;
+      positionEl.appendChild(chip);
+      positionEl.appendChild(document.createTextNode(' ' + pileLabel));
+    }
     flashcardsBody.querySelector('.flashcard-face.front .face-text').textContent = card.front;
     flashcardsBody.querySelector('.flashcard-face.back .face-text').textContent = card.back || '(blank)';
 
