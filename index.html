@@ -1570,6 +1570,134 @@
   .fc-controls button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--coral); }
   .fc-controls button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--edge); }
 
+  /* Know / don't-know pile buttons during review */
+  .fc-pile-row {
+    display: flex;
+    gap: 0.85rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .fc-pile-btn {
+    padding: 0.85rem 1.6rem;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ink);
+  }
+  .fc-pile-btn.know { box-shadow: 4px 4px 0 var(--teal); }
+  .fc-pile-btn.dontKnow { box-shadow: 4px 4px 0 var(--coral); }
+  .fc-pile-btn:hover { transform: translate(-1px, -1px); }
+  .fc-pile-btn.know:hover { box-shadow: 5px 5px 0 var(--teal); }
+  .fc-pile-btn.dontKnow:hover { box-shadow: 5px 5px 0 var(--coral); }
+  .fc-pile-btn:active { transform: translate(2px, 2px); }
+
+  /* Tiny pile indicator on card-list rows */
+  .fc-pile-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.7rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    margin-right: 0.45rem;
+    color: var(--paper);
+    flex-shrink: 0;
+  }
+  .fc-pile-chip.know { background: var(--teal); }
+  .fc-pile-chip.dontKnow { background: var(--coral); }
+
+  /* End-of-deck summary */
+  .fc-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 1.5rem 0;
+    text-align: center;
+  }
+  .fc-summary h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .fc-summary h3::after {
+    content: "";
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: var(--coral);
+    margin: 0.5rem auto 0;
+  }
+  .fc-summary-blurb {
+    color: var(--ink-soft);
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    margin: 0;
+  }
+  .fc-summary-counts {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .fc-summary-count {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    padding: 1rem 1.4rem;
+    min-width: 120px;
+  }
+  .fc-summary-count.know {
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge),
+      3px 3px 0 var(--teal),
+      4px 4px 0 var(--teal),
+      5px 5px 0 var(--teal);
+  }
+  .fc-summary-count.dontKnow {
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge),
+      3px 3px 0 var(--coral),
+      4px 4px 0 var(--coral),
+      5px 5px 0 var(--coral);
+  }
+  .fc-summary-count .num {
+    display: block;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .fc-summary-count .label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 0.5rem;
+  }
+  .fc-summary-actions {
+    display: flex;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 540px;
+  }
+
   /* ----- Modal ----- */
   .modal-overlay {
     position: fixed;
@@ -1867,7 +1995,7 @@
     exams: [],
     flashcardSets: [],
     flashcardsDirty: false,
-    flashcardsNav: { path: [], mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
+    flashcardsNav: { path: [], mode: null, index: 0, flipped: false, order: null, combined: false, cards: null, filter: null },
     calendarEvents: [],
     calendarView: { year: 0, month: 0, selected: null, mode: 'month' },
     quoteOrder: []
@@ -2632,10 +2760,44 @@
   /* ----- Navigation ----- */
   function flashcardsGoto(nav) {
     state.flashcardsNav = Object.assign(
-      { path: [], mode: null, index: 0, flipped: false, order: null, combined: false, cards: null },
+      { path: [], mode: null, index: 0, flipped: false, order: null, combined: false, cards: null, filter: null },
       nav || {}
     );
     renderFlashcards();
+  }
+
+  /* Collect every card reachable from a node, paired with its container path.
+     If the node has direct cards, that's it — no descent. Otherwise we walk
+     every descendant subset. */
+  function gatherCardsForReview(path) {
+    const node = resolvePath(path);
+    if (!node) return [];
+    if (Array.isArray(node.cards) && node.cards.length) {
+      return node.cards.map(c => ({ card: c, containerPath: path.slice() }));
+    }
+    const out = [];
+    (function walk(n, currentPath) {
+      if (Array.isArray(n.cards) && n.cards.length) {
+        n.cards.forEach(c => out.push({ card: c, containerPath: currentPath.slice() }));
+      }
+      if (Array.isArray(n.subsets)) {
+        n.subsets.forEach(child => walk(child, [...currentPath, child.id]));
+      }
+    })(node, path.slice());
+    return out;
+  }
+
+  function pileCounts(path) {
+    const all = gatherCardsForReview(path);
+    const know = all.filter(x => x.card.pile === 'know').length;
+    const dontKnow = all.filter(x => x.card.pile === 'dontKnow').length;
+    return { total: all.length, know, dontKnow, unsorted: all.length - know - dontKnow };
+  }
+
+  function resetPilesUnder(path) {
+    const all = gatherCardsForReview(path);
+    all.forEach(({ card }) => { delete card.pile; });
+    save(); markDirty();
   }
 
   function buildBreadcrumb() {
@@ -2684,6 +2846,7 @@
     buildBreadcrumb();
     const nav = state.flashcardsNav;
     if (nav.mode === 'review') return renderReview();
+    if (nav.mode === 'summary') return renderReviewSummary();
     if (!nav.path.length) return renderSetsList();
     return renderNodeDetail(nav.path);
   }
@@ -2711,6 +2874,8 @@
     if (hasSubs) parts.push(`${node.subsets.length} subset${node.subsets.length === 1 ? '' : 's'}`);
     if (hasCards) parts.push(`${node.cards.length} card${node.cards.length === 1 ? '' : 's'}`);
     if (hasSubs && total) parts.push(`${total} total`);
+    const counts = pileCounts(nodePath);
+    if (counts.dontKnow) parts.push(`${counts.dontKnow} don’t-know`);
     if (!parts.length) parts.push('empty');
     row.querySelector('.fc-row-meta').textContent = parts.join(' · ');
 
@@ -2720,10 +2885,7 @@
     });
     const reviewBtn = row.querySelector('[data-act="review"]');
     if (reviewBtn) {
-      reviewBtn.addEventListener('click', () => {
-        if (hasSubs) startReviewCombined(nodePath);
-        else startReview(nodePath);
-      });
+      reviewBtn.addEventListener('click', () => startReview(nodePath));
     }
     row.querySelector('[data-act="edit"]').addEventListener('click', () => promptNode(nodePath.slice(0, -1), node, nodePath));
     row.querySelector('[data-act="delete"]').addEventListener('click', () => {
@@ -2785,19 +2947,20 @@
       addCardBtn.addEventListener('click', () => promptCard(path, null));
       toolbar.appendChild(addCardBtn);
     }
-    if (hasCards) {
+    if (hasCards || (hasSubs && totalCardCount(node) > 0)) {
       const reviewBtn = document.createElement('button');
       reviewBtn.className = 'btn-primary';
-      reviewBtn.textContent = 'Review ▸';
+      reviewBtn.textContent = hasSubs ? 'Review all ▸' : 'Review ▸';
       reviewBtn.addEventListener('click', () => startReview(path));
       toolbar.appendChild(reviewBtn);
     }
-    if (hasSubs && totalCardCount(node) > 0) {
-      const reviewAllBtn = document.createElement('button');
-      reviewAllBtn.className = 'btn-primary';
-      reviewAllBtn.textContent = 'Review all ▸';
-      reviewAllBtn.addEventListener('click', () => startReviewCombined(path));
-      toolbar.appendChild(reviewAllBtn);
+    const counts = pileCounts(path);
+    if (counts.dontKnow > 0) {
+      const dkBtn = document.createElement('button');
+      dkBtn.className = 'btn-primary';
+      dkBtn.textContent = `Review don't-know (${counts.dontKnow}) ▸`;
+      dkBtn.addEventListener('click', () => startReview(path, { filter: 'dontKnow' }));
+      toolbar.appendChild(dkBtn);
     }
     flashcardsBody.appendChild(toolbar);
 
@@ -2838,7 +3001,17 @@
           <button class="icon-btn" data-act="edit" title="Edit">✎</button>
           <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
         </div>`;
-      row.querySelector('.fc-row-title').textContent = c.front;
+      const titleEl = row.querySelector('.fc-row-title');
+      if (c.pile === 'know' || c.pile === 'dontKnow') {
+        const chip = document.createElement('span');
+        chip.className = 'fc-pile-chip ' + c.pile;
+        chip.textContent = c.pile === 'know' ? '✓' : '✗';
+        chip.title = c.pile === 'know' ? 'Marked: Know' : 'Marked: Don’t know';
+        titleEl.appendChild(chip);
+        titleEl.appendChild(document.createTextNode(c.front));
+      } else {
+        titleEl.textContent = c.front;
+      }
       row.querySelector('.fc-row-meta').textContent = (c.back || '').slice(0, 80);
       row.style.cursor = 'default';
       row.querySelector('[data-act="edit"]').addEventListener('click', () => promptCard(containerPath, c));
@@ -2851,41 +3024,32 @@
     container.appendChild(list);
   }
 
-  function startReview(path) {
-    const node = resolvePath(path);
-    const cards = (node && node.cards) ? node.cards : [];
-    if (!cards.length) { window.alert('No cards to review.'); return; }
-    const order = cards.map((_, i) => i);
-    flashcardsGoto({ path, mode: 'review', index: 0, flipped: false, order });
-  }
-
-  function startReviewCombined(path) {
-    const node = resolvePath(path);
-    if (!node) return;
-    const collected = [];
-    (function walk(n, currentPath) {
-      if (Array.isArray(n.cards) && n.cards.length) {
-        n.cards.forEach(c => collected.push({ card: c, containerPath: currentPath.slice() }));
-      }
-      if (Array.isArray(n.subsets)) {
-        n.subsets.forEach(child => walk(child, [...currentPath, child.id]));
-      }
-    })(node, path.slice());
-    if (!collected.length) { window.alert('No cards in this group yet.'); return; }
-    const order = collected.map((_, i) => i);
+  function startReview(path, opts) {
+    opts = opts || {};
+    const all = gatherCardsForReview(path);
+    let deck = all;
+    if (opts.filter === 'dontKnow') deck = all.filter(x => x.card.pile === 'dontKnow');
+    if (!deck.length) {
+      window.alert(opts.filter === 'dontKnow' ? "No cards in the don't-know pile yet." : 'No cards to review.');
+      return;
+    }
+    // "Combined" means the deck spans more than just the node's direct cards.
+    const combined = deck.some(x =>
+      x.containerPath.length !== path.length ||
+      x.containerPath.some((id, i) => id !== path[i])
+    );
+    const order = deck.map((_, i) => i);
     flashcardsGoto({
-      path, combined: true, mode: 'review',
-      index: 0, flipped: false, order, cards: collected
+      path, combined, mode: 'review',
+      index: 0, flipped: false, order, cards: deck,
+      filter: opts.filter || null
     });
   }
 
   function reviewCards() {
     const nav = state.flashcardsNav;
-    if (nav.combined && Array.isArray(nav.cards)) {
-      return nav.cards.map(x => x.card);
-    }
-    const node = resolvePath(nav.path);
-    return (node && node.cards) ? node.cards : [];
+    if (Array.isArray(nav.cards)) return nav.cards.map(x => x.card);
+    return [];
   }
 
   function renderReview() {
@@ -2898,6 +3062,10 @@
     const safeIdx = Math.min(nav.index, nav.order.length - 1);
     const card = cards[nav.order[safeIdx]];
     if (!card) { flashcardsGoto({ path: nav.path }); return; }
+
+    const pileLabel = card.pile === 'know' ? '✓ Known'
+      : card.pile === 'dontKnow' ? '✗ Don’t know'
+      : '';
 
     flashcardsBody.innerHTML = `
       <div class="fc-review">
@@ -2914,6 +3082,10 @@
             </div>
           </div>
         </div>
+        <div class="fc-pile-row">
+          <button class="fc-pile-btn dontKnow" data-act="dontKnow">✗ Don’t know</button>
+          <button class="fc-pile-btn know" data-act="know">✓ Know</button>
+        </div>
         <div class="fc-controls">
           <button data-act="prev">‹ Prev</button>
           <button data-act="flip">Flip</button>
@@ -2924,11 +3096,12 @@
         </div>
       </div>`;
 
-    flashcardsBody.querySelector('.fc-position').textContent = `Card ${safeIdx + 1} of ${nav.order.length}`;
+    flashcardsBody.querySelector('.fc-position').textContent =
+      `Card ${safeIdx + 1} of ${nav.order.length}` + (pileLabel ? ` · ${pileLabel}` : '');
     flashcardsBody.querySelector('.flashcard-face.front .face-text').textContent = card.front;
     flashcardsBody.querySelector('.flashcard-face.back .face-text').textContent = card.back || '(blank)';
 
-    const containerPath = nav.combined && nav.cards
+    const containerPath = Array.isArray(nav.cards)
       ? nav.cards[nav.order[safeIdx]].containerPath
       : nav.path;
 
@@ -2939,6 +3112,8 @@
     flashcardsBody.querySelector('[data-act="next"]').addEventListener('click', nextReview);
     flashcardsBody.querySelector('[data-act="flip"]').addEventListener('click', flipReview);
     flashcardsBody.querySelector('[data-act="shuffle"]').addEventListener('click', shuffleReview);
+    flashcardsBody.querySelector('[data-act="know"]').addEventListener('click', () => pileCurrent('know'));
+    flashcardsBody.querySelector('[data-act="dontKnow"]').addEventListener('click', () => pileCurrent('dontKnow'));
     flashcardsBody.querySelector('[data-act="edit"]').addEventListener('click', () => {
       promptCard(containerPath, card);
     });
@@ -2946,33 +3121,89 @@
       if (!window.confirm(`Delete card "${card.front.slice(0, 40)}"?`)) return;
       deleteCard(containerPath, card.id);
 
-      if (nav.combined) {
-        const removeAt = nav.order[safeIdx];
-        nav.cards.splice(removeAt, 1);
-        if (!nav.cards.length) {
-          flashcardsGoto({ path: nav.path });
-          return;
-        }
-        const newOrder = nav.cards.map((_, i) => i);
-        const newIdx = Math.min(nav.index, newOrder.length - 1);
-        flashcardsGoto({
-          path: nav.path, combined: true, mode: 'review',
-          index: newIdx, flipped: false, order: newOrder, cards: nav.cards
-        });
-        return;
-      }
-
-      const remaining = reviewCards();
-      if (!remaining.length) {
+      const removeAt = nav.order[safeIdx];
+      nav.cards.splice(removeAt, 1);
+      if (!nav.cards.length) {
         flashcardsGoto({ path: nav.path });
         return;
       }
-      const newOrder = remaining.map((_, i) => i);
+      const newOrder = nav.cards.map((_, i) => i);
       const newIdx = Math.min(nav.index, newOrder.length - 1);
-      flashcardsGoto({ path: nav.path, mode: 'review', index: newIdx, flipped: false, order: newOrder });
+      flashcardsGoto({
+        path: nav.path, combined: nav.combined, mode: 'review',
+        index: newIdx, flipped: false, order: newOrder, cards: nav.cards,
+        filter: nav.filter
+      });
     });
 
     cardEl.focus();
+  }
+
+  function pileCurrent(value) {
+    const nav = state.flashcardsNav;
+    const cards = reviewCards();
+    const safeIdx = Math.min(nav.index, nav.order.length - 1);
+    const card = cards[nav.order[safeIdx]];
+    if (!card) return;
+    card.pile = value;
+    save();
+    markDirty();
+    if (safeIdx >= nav.order.length - 1) {
+      // last card → summary
+      nav.mode = 'summary';
+      nav.flipped = false;
+      renderFlashcards();
+    } else {
+      nav.index = safeIdx + 1;
+      nav.flipped = false;
+      renderReview();
+    }
+  }
+
+  function renderReviewSummary() {
+    const nav = state.flashcardsNav;
+    const counts = pileCounts(nav.path);
+    const inFilter = nav.filter === 'dontKnow';
+    flashcardsBody.innerHTML = `
+      <div class="fc-summary">
+        <h3>Round complete</h3>
+        <p class="fc-summary-blurb"></p>
+        <div class="fc-summary-counts">
+          <div class="fc-summary-count know"><span class="num"></span><div class="label">Know</div></div>
+          <div class="fc-summary-count dontKnow"><span class="num"></span><div class="label">Don’t know</div></div>
+        </div>
+        <div class="fc-summary-actions">
+          <button class="btn-primary" data-act="reviewDontKnow" ${counts.dontKnow ? '' : 'disabled'}>
+            Review don’t-know pile (${counts.dontKnow})
+          </button>
+          <button class="btn-primary" data-act="restart">Start over</button>
+          <button class="btn-primary" data-act="back">Back</button>
+          <button class="btn-ghost" data-act="resetPiles">Reset piles</button>
+        </div>
+      </div>`;
+
+    flashcardsBody.querySelector('.fc-summary-blurb').textContent = inFilter
+      ? "Cleared the don't-know pile (for now)."
+      : `You marked ${counts.know} known and ${counts.dontKnow} not yet${counts.unsorted ? `, with ${counts.unsorted} unsorted` : ''}.`;
+    const numEls = flashcardsBody.querySelectorAll('.fc-summary-count .num');
+    numEls[0].textContent = counts.know;
+    numEls[1].textContent = counts.dontKnow;
+
+    flashcardsBody.querySelector('[data-act="reviewDontKnow"]').addEventListener('click', () => {
+      if (!counts.dontKnow) return;
+      startReview(nav.path, { filter: 'dontKnow' });
+    });
+    flashcardsBody.querySelector('[data-act="restart"]').addEventListener('click', () => {
+      startReview(nav.path, { filter: nav.filter || null });
+    });
+    flashcardsBody.querySelector('[data-act="back"]').addEventListener('click', () => {
+      flashcardsGoto({ path: nav.path });
+    });
+    flashcardsBody.querySelector('[data-act="resetPiles"]').addEventListener('click', () => {
+      if (!window.confirm('Reset know / don’t-know piles for every card under this group?')) return;
+      resetPilesUnder(nav.path);
+      flashcardsGoto({ path: nav.path });
+    });
   }
 
   function flipReview() {
@@ -3008,6 +3239,8 @@
     if (e.key === 'ArrowLeft') { e.preventDefault(); prevReview(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); nextReview(); }
     else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipReview(); }
+    else if (e.key === '1') { e.preventDefault(); pileCurrent('dontKnow'); }
+    else if (e.key === '2') { e.preventDefault(); pileCurrent('know'); }
   });
 
   /* ----- Edit prompts ----- */
