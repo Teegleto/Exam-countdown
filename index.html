@@ -1594,9 +1594,11 @@
     color: var(--ink);
   }
   .fc-pile-btn.know { box-shadow: 4px 4px 0 var(--teal); }
+  .fc-pile-btn.fluke { box-shadow: 4px 4px 0 var(--mustard); }
   .fc-pile-btn.dontKnow { box-shadow: 4px 4px 0 var(--coral); }
   .fc-pile-btn:hover { transform: translate(-1px, -1px); }
   .fc-pile-btn.know:hover { box-shadow: 5px 5px 0 var(--teal); }
+  .fc-pile-btn.fluke:hover { box-shadow: 5px 5px 0 var(--mustard); }
   .fc-pile-btn.dontKnow:hover { box-shadow: 5px 5px 0 var(--coral); }
   .fc-pile-btn:active { transform: translate(2px, 2px); }
 
@@ -1615,6 +1617,7 @@
     flex-shrink: 0;
   }
   .fc-pile-chip.know { background: var(--teal); }
+  .fc-pile-chip.fluke { background: var(--mustard); color: var(--ink); }
   .fc-pile-chip.dontKnow { background: var(--coral); }
 
   /* End-of-deck summary */
@@ -1667,6 +1670,14 @@
       3px 3px 0 var(--teal),
       4px 4px 0 var(--teal),
       5px 5px 0 var(--teal);
+  }
+  .fc-summary-count.fluke {
+    box-shadow:
+      1px 1px 0 var(--edge-soft),
+      2px 2px 0 var(--edge),
+      3px 3px 0 var(--mustard),
+      4px 4px 0 var(--mustard),
+      5px 5px 0 var(--mustard);
   }
   .fc-summary-count.dontKnow {
     box-shadow:
@@ -2790,8 +2801,9 @@
   function pileCounts(path) {
     const all = gatherCardsForReview(path);
     const know = all.filter(x => x.card.pile === 'know').length;
+    const fluke = all.filter(x => x.card.pile === 'fluke').length;
     const dontKnow = all.filter(x => x.card.pile === 'dontKnow').length;
-    return { total: all.length, know, dontKnow, unsorted: all.length - know - dontKnow };
+    return { total: all.length, know, fluke, dontKnow, unsorted: all.length - know - fluke - dontKnow };
   }
 
   function resetPilesUnder(path) {
@@ -2876,6 +2888,7 @@
     if (hasSubs && total) parts.push(`${total} total`);
     const counts = pileCounts(nodePath);
     if (counts.dontKnow) parts.push(`${counts.dontKnow} don’t-know`);
+    if (counts.fluke) parts.push(`${counts.fluke} fluke`);
     if (!parts.length) parts.push('empty');
     row.querySelector('.fc-row-meta').textContent = parts.join(' · ');
 
@@ -2962,6 +2975,13 @@
       dkBtn.addEventListener('click', () => startReview(path, { filter: 'dontKnow' }));
       toolbar.appendChild(dkBtn);
     }
+    if (counts.fluke > 0) {
+      const flBtn = document.createElement('button');
+      flBtn.className = 'btn-primary';
+      flBtn.textContent = `Review fluke (${counts.fluke}) ▸`;
+      flBtn.addEventListener('click', () => startReview(path, { filter: 'fluke' }));
+      toolbar.appendChild(flBtn);
+    }
     flashcardsBody.appendChild(toolbar);
 
     if (hasSubs) {
@@ -3002,11 +3022,13 @@
           <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
         </div>`;
       const titleEl = row.querySelector('.fc-row-title');
-      if (c.pile === 'know' || c.pile === 'dontKnow') {
+      if (c.pile === 'know' || c.pile === 'fluke' || c.pile === 'dontKnow') {
         const chip = document.createElement('span');
         chip.className = 'fc-pile-chip ' + c.pile;
-        chip.textContent = c.pile === 'know' ? '✓' : '✗';
-        chip.title = c.pile === 'know' ? 'Marked: Know' : 'Marked: Don’t know';
+        chip.textContent = c.pile === 'know' ? '✓' : c.pile === 'fluke' ? '~' : '✗';
+        chip.title = c.pile === 'know' ? 'Marked: Know'
+          : c.pile === 'fluke' ? 'Marked: Fluke'
+          : 'Marked: Don’t know';
         titleEl.appendChild(chip);
         titleEl.appendChild(document.createTextNode(c.front));
       } else {
@@ -3028,9 +3050,15 @@
     opts = opts || {};
     const all = gatherCardsForReview(path);
     let deck = all;
-    if (opts.filter === 'dontKnow') deck = all.filter(x => x.card.pile === 'dontKnow');
+    if (opts.filter === 'dontKnow' || opts.filter === 'fluke' || opts.filter === 'know') {
+      deck = all.filter(x => x.card.pile === opts.filter);
+    }
     if (!deck.length) {
-      window.alert(opts.filter === 'dontKnow' ? "No cards in the don't-know pile yet." : 'No cards to review.');
+      const label = opts.filter === 'dontKnow' ? "don't-know"
+        : opts.filter === 'fluke' ? "fluke"
+        : opts.filter === 'know' ? "know"
+        : null;
+      window.alert(label ? `No cards in the ${label} pile yet.` : 'No cards to review.');
       return;
     }
     // "Combined" means the deck spans more than just the node's direct cards.
@@ -3064,6 +3092,7 @@
     if (!card) { flashcardsGoto({ path: nav.path }); return; }
 
     const pileLabel = card.pile === 'know' ? '✓ Known'
+      : card.pile === 'fluke' ? '~ Fluke'
       : card.pile === 'dontKnow' ? '✗ Don’t know'
       : '';
 
@@ -3084,6 +3113,7 @@
         </div>
         <div class="fc-pile-row">
           <button class="fc-pile-btn dontKnow" data-act="dontKnow">✗ Don’t know</button>
+          <button class="fc-pile-btn fluke" data-act="fluke">~ Fluke</button>
           <button class="fc-pile-btn know" data-act="know">✓ Know</button>
         </div>
         <div class="fc-controls">
@@ -3113,6 +3143,7 @@
     flashcardsBody.querySelector('[data-act="flip"]').addEventListener('click', flipReview);
     flashcardsBody.querySelector('[data-act="shuffle"]').addEventListener('click', shuffleReview);
     flashcardsBody.querySelector('[data-act="know"]').addEventListener('click', () => pileCurrent('know'));
+    flashcardsBody.querySelector('[data-act="fluke"]').addEventListener('click', () => pileCurrent('fluke'));
     flashcardsBody.querySelector('[data-act="dontKnow"]').addEventListener('click', () => pileCurrent('dontKnow'));
     flashcardsBody.querySelector('[data-act="edit"]').addEventListener('click', () => {
       promptCard(containerPath, card);
@@ -3163,18 +3194,27 @@
   function renderReviewSummary() {
     const nav = state.flashcardsNav;
     const counts = pileCounts(nav.path);
-    const inFilter = nav.filter === 'dontKnow';
+    const filtered = nav.filter || null;
+    const blurbMap = {
+      know: 'Cleared the know pile (for now).',
+      fluke: 'Cleared the fluke pile (for now).',
+      dontKnow: "Cleared the don't-know pile (for now)."
+    };
     flashcardsBody.innerHTML = `
       <div class="fc-summary">
         <h3>Round complete</h3>
         <p class="fc-summary-blurb"></p>
         <div class="fc-summary-counts">
           <div class="fc-summary-count know"><span class="num"></span><div class="label">Know</div></div>
+          <div class="fc-summary-count fluke"><span class="num"></span><div class="label">Fluke</div></div>
           <div class="fc-summary-count dontKnow"><span class="num"></span><div class="label">Don’t know</div></div>
         </div>
         <div class="fc-summary-actions">
           <button class="btn-primary" data-act="reviewDontKnow" ${counts.dontKnow ? '' : 'disabled'}>
-            Review don’t-know pile (${counts.dontKnow})
+            Review don’t-know (${counts.dontKnow})
+          </button>
+          <button class="btn-primary" data-act="reviewFluke" ${counts.fluke ? '' : 'disabled'}>
+            Review fluke (${counts.fluke})
           </button>
           <button class="btn-primary" data-act="restart">Start over</button>
           <button class="btn-primary" data-act="back">Back</button>
@@ -3182,16 +3222,21 @@
         </div>
       </div>`;
 
-    flashcardsBody.querySelector('.fc-summary-blurb').textContent = inFilter
-      ? "Cleared the don't-know pile (for now)."
-      : `You marked ${counts.know} known and ${counts.dontKnow} not yet${counts.unsorted ? `, with ${counts.unsorted} unsorted` : ''}.`;
+    flashcardsBody.querySelector('.fc-summary-blurb').textContent = filtered
+      ? (blurbMap[filtered] || 'Round complete.')
+      : `You marked ${counts.know} known, ${counts.fluke} fluke and ${counts.dontKnow} not yet${counts.unsorted ? `, with ${counts.unsorted} unsorted` : ''}.`;
     const numEls = flashcardsBody.querySelectorAll('.fc-summary-count .num');
     numEls[0].textContent = counts.know;
-    numEls[1].textContent = counts.dontKnow;
+    numEls[1].textContent = counts.fluke;
+    numEls[2].textContent = counts.dontKnow;
 
     flashcardsBody.querySelector('[data-act="reviewDontKnow"]').addEventListener('click', () => {
       if (!counts.dontKnow) return;
       startReview(nav.path, { filter: 'dontKnow' });
+    });
+    flashcardsBody.querySelector('[data-act="reviewFluke"]').addEventListener('click', () => {
+      if (!counts.fluke) return;
+      startReview(nav.path, { filter: 'fluke' });
     });
     flashcardsBody.querySelector('[data-act="restart"]').addEventListener('click', () => {
       startReview(nav.path, { filter: nav.filter || null });
@@ -3200,7 +3245,7 @@
       flashcardsGoto({ path: nav.path });
     });
     flashcardsBody.querySelector('[data-act="resetPiles"]').addEventListener('click', () => {
-      if (!window.confirm('Reset know / don’t-know piles for every card under this group?')) return;
+      if (!window.confirm('Reset every pile (know, fluke, don’t-know) for every card under this group?')) return;
       resetPilesUnder(nav.path);
       flashcardsGoto({ path: nav.path });
     });
@@ -3240,7 +3285,8 @@
     else if (e.key === 'ArrowRight') { e.preventDefault(); nextReview(); }
     else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipReview(); }
     else if (e.key === '1') { e.preventDefault(); pileCurrent('dontKnow'); }
-    else if (e.key === '2') { e.preventDefault(); pileCurrent('know'); }
+    else if (e.key === '2') { e.preventDefault(); pileCurrent('fluke'); }
+    else if (e.key === '3') { e.preventDefault(); pileCurrent('know'); }
   });
 
   /* ----- Edit prompts ----- */
