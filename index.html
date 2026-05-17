@@ -1364,28 +1364,6 @@
   }
 
   /* ===== Flashcards ===== */
-  .fc-dirty {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.85rem;
-    background: var(--paper);
-    border: 1.5px solid var(--ink);
-    box-shadow: var(--shadow-stack);
-    padding: 0.7rem 1rem;
-    margin-bottom: 1.2rem;
-    flex-wrap: wrap;
-  }
-  .fc-dirty[hidden] { display: none; }
-  .fc-dirty span {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-weight: 700;
-    color: var(--ink-soft);
-  }
-  .fc-dirty .btn-primary { padding: 0.55rem 1rem; font-size: 0.78rem; }
-
   .breadcrumb {
     display: flex;
     align-items: center;
@@ -1843,10 +1821,6 @@
     </section>
 
     <section class="view" id="flashcardsView" hidden>
-      <div class="fc-dirty" id="flashcardsDirtyBanner" hidden>
-        <span>Unsaved changes</span>
-        <button type="button" class="btn-primary" id="flashcardsSaveNow">Save now</button>
-      </div>
       <nav class="breadcrumb" id="flashcardsBreadcrumb"></nav>
       <div class="flashcards-body" id="flashcardsBody"></div>
     </section>
@@ -1920,7 +1894,6 @@
   const STORAGE_KEY = 'exam-countdown-exams';
   const QUOTES_KEY = 'exam-countdown-quotes';
   const FLASHCARDS_KEY = 'flashcard-sets';
-  const FLASHCARDS_DIRTY_KEY = 'flashcard-sets-dirty';
   const CALENDAR_KEY = 'calendar-events';
   const SAVE_PASSWORD = 'Quack';
   const LOGIN_USER = 'Teeg';
@@ -2021,7 +1994,6 @@
   const state = {
     exams: [],
     flashcardSets: [],
-    flashcardsDirty: false,
     flashcardsNav: { path: [], mode: null, index: 0, flipped: false, order: null, combined: false, cards: null, filter: null },
     calendarEvents: [],
     calendarView: { year: 0, month: 0, selected: null, mode: 'month' },
@@ -2077,7 +2049,6 @@
     } catch (e) {
       state.flashcardSets = [];
     }
-    state.flashcardsDirty = localStorage.getItem(FLASHCARDS_DIRTY_KEY) === '1';
     try {
       const rawCal = localStorage.getItem(CALENDAR_KEY);
       if (rawCal) {
@@ -2147,7 +2118,7 @@
         state.exams = record.exams;
         changed = true;
       }
-      if (record && Array.isArray(record.flashcardSets) && !state.flashcardsDirty) {
+      if (record && Array.isArray(record.flashcardSets)) {
         state.flashcardSets = record.flashcardSets;
         changed = true;
       }
@@ -2506,7 +2477,6 @@
     }
     if (name === 'calendar') renderCalendar();
     if (name === 'settings') showSubview('exams');
-    if (wasFlashcards && name !== 'flashcards') commitFlashcards();
     closeMenu();
   }
 
@@ -2719,41 +2689,17 @@
   });
   modalForm.addEventListener('submit', (e) => { e.preventDefault(); modalSave(); });
 
-  /* ----- Dirty tracking + commit ----- */
-  function markDirty() {
-    state.flashcardsDirty = true;
-    localStorage.setItem(FLASHCARDS_DIRTY_KEY, '1');
-    updateDirtyIndicator();
-  }
-  function clearDirty() {
-    state.flashcardsDirty = false;
-    localStorage.removeItem(FLASHCARDS_DIRTY_KEY);
-    updateDirtyIndicator();
-  }
-  async function commitFlashcards({ silentIfClean = true } = {}) {
-    if (!state.flashcardsDirty) {
-      if (!silentIfClean) window.alert('Nothing to save.');
-      return;
-    }
-    await pushRemote();
-    clearDirty();
-  }
-  function updateDirtyIndicator() {
-    const banner = document.getElementById('flashcardsDirtyBanner');
-    if (banner) banner.hidden = !state.flashcardsDirty;
-  }
-
   /* ----- CRUD (path-based, recursive nesting) ----- */
   function addNode(parentPath, name) {
     const coll = resolveChildrenCollection(parentPath);
     if (!coll) return;
     coll.push({ id: newId(), name: name.trim(), subsets: [], cards: [] });
-    save(); markDirty();
+    save(); pushRemote();
   }
   function updateNode(path, name) {
     const n = resolvePath(path); if (!n) return;
     n.name = name.trim();
-    save(); markDirty();
+    save(); pushRemote();
   }
   function deleteNode(path) {
     const parent = resolveParentCollection(path);
@@ -2762,13 +2708,13 @@
     const idx = parent.findIndex(n => n.id === id);
     if (idx === -1) return;
     parent.splice(idx, 1);
-    save(); markDirty();
+    save(); pushRemote();
   }
   function addCard(containerPath, front, back) {
     const node = resolvePath(containerPath); if (!node) return;
     if (!Array.isArray(node.cards)) node.cards = [];
     node.cards.push({ id: newId(), front: front.trim(), back: back.trim() });
-    save(); markDirty();
+    save(); pushRemote();
   }
   function updateCard(containerPath, cardId, front, back) {
     const node = resolvePath(containerPath); if (!node || !Array.isArray(node.cards)) return;
@@ -2776,12 +2722,12 @@
     if (!c) return;
     c.front = front.trim();
     c.back = back.trim();
-    save(); markDirty();
+    save(); pushRemote();
   }
   function deleteCard(containerPath, cardId) {
     const node = resolvePath(containerPath); if (!node || !Array.isArray(node.cards)) return;
     node.cards = node.cards.filter(c => c.id !== cardId);
-    save(); markDirty();
+    save(); pushRemote();
   }
 
   /* ----- Navigation ----- */
@@ -2825,7 +2771,7 @@
   function resetPilesUnder(path) {
     const all = gatherCardsForReview(path);
     all.forEach(({ card }) => { delete card.pile; });
-    save(); markDirty();
+    save(); pushRemote();
   }
 
   function buildBreadcrumb() {
@@ -3228,7 +3174,7 @@
     if (!card) return;
     card.pile = value;
     save();
-    markDirty();
+    pushRemote();
     if (safeIdx >= nav.order.length - 1) {
       // last card → summary
       nav.mode = 'summary';
@@ -3374,11 +3320,6 @@
         renderFlashcards();
       }
     });
-  }
-
-  const saveNowBtn = document.getElementById('flashcardsSaveNow');
-  if (saveNowBtn) {
-    saveNowBtn.addEventListener('click', () => commitFlashcards({ silentIfClean: false }));
   }
 
   /* ===================================================================
@@ -3865,7 +3806,6 @@
   });
 
   load();
-  updateDirtyIndicator();
   render();
   // Initialise calendar view to today
   const _now = new Date();
