@@ -1523,6 +1523,101 @@
     word-break: break-word;
     white-space: pre-wrap;
   }
+  /* Image on a flashcard face */
+  .flashcard-face .face-image {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-height: 65%;
+    margin-bottom: 0.6rem;
+  }
+  .flashcard-face .face-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .flashcard-face[data-has-image="true"] .face-image { display: flex; }
+  .flashcard-face[data-has-image="true"] .face-text {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    line-height: 1.3;
+  }
+
+  /* Image-upload field inside the edit modal */
+  .image-field {
+    margin-top: 0.3rem;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    color: var(--ink);
+  }
+  .image-field-preview {
+    background: var(--paper-cool);
+    border: 1.5px dashed rgba(28,31,18,0.25);
+    padding: 0.65rem;
+    margin-bottom: 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 90px;
+    max-height: 220px;
+    overflow: hidden;
+  }
+  .image-field-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    display: block;
+  }
+  .image-field-preview:empty::before {
+    content: "No image";
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 800;
+  }
+  .image-field-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .image-field-controls button {
+    padding: 0.5rem 0.95rem;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .image-field-controls button:hover { background: var(--paper-cool); }
+  .image-field-controls button.danger { color: var(--danger); border-color: var(--danger); }
+  .image-field-controls button.danger:hover { background: rgba(200,84,71,0.1); }
+  .image-field-controls .status {
+    align-self: center;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  .image-field input[type="file"] { display: none; }
+
+  /* Tiny thumbnail in card-list rows */
+  .fc-row-thumb {
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--ink);
+    object-fit: cover;
+    margin-right: 0.65rem;
+    flex-shrink: 0;
+  }
+  .fc-row-with-thumb { display: flex; align-items: center; }
   .fc-controls {
     display: flex;
     gap: 0.85rem;
@@ -2639,6 +2734,8 @@
           wrap.appendChild(sw);
         });
         label.appendChild(wrap);
+      } else if (f.type === 'image') {
+        label.appendChild(buildImageField(f));
       } else {
         const input = f.multiline
           ? document.createElement('textarea')
@@ -2662,6 +2759,134 @@
     editModal.hidden = true;
     modalForm.innerHTML = '';
     modalOnSave = null;
+  }
+
+  /* ----- Image upload helper used by the modal's 'image' field type ----- */
+  const IMAGE_MAX_DIM = 800;
+  const IMAGE_QUALITY = 0.72;
+
+  function fmtBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' KB';
+    return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+  function dataUrlByteSize(dataUrl) {
+    if (!dataUrl) return 0;
+    const i = dataUrl.indexOf(',');
+    const b64 = i >= 0 ? dataUrl.slice(i + 1) : dataUrl;
+    // approx: 4 base64 chars encode 3 bytes; subtract padding
+    const pad = (b64.match(/=+$/) || [''])[0].length;
+    return Math.floor((b64.length * 3) / 4) - pad;
+  }
+
+  async function resizeImageToDataUrl(file, maxDim, quality) {
+    const sourceUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(r.error || new Error('Could not read file'));
+      r.readAsDataURL(file);
+    });
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('Could not decode image'));
+      i.src = sourceUrl;
+    });
+    let w = img.naturalWidth || img.width;
+    let h = img.naturalHeight || img.height;
+    if (w > maxDim || h > maxDim) {
+      if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+      else        { w = Math.round(w * (maxDim / h)); h = maxDim; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', quality);
+  }
+
+  function buildImageField(f) {
+    const wrap = document.createElement('div');
+    wrap.className = 'image-field';
+
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = f.name;
+    hidden.value = f.value || '';
+    wrap.appendChild(hidden);
+
+    const preview = document.createElement('div');
+    preview.className = 'image-field-preview';
+    wrap.appendChild(preview);
+
+    const controls = document.createElement('div');
+    controls.className = 'image-field-controls';
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    controls.appendChild(fileInput);
+
+    const chooseBtn = document.createElement('button');
+    chooseBtn.type = 'button';
+    chooseBtn.textContent = hidden.value ? 'Replace' : 'Choose image';
+    chooseBtn.addEventListener('click', () => fileInput.click());
+    controls.appendChild(chooseBtn);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'danger';
+    clearBtn.textContent = 'Remove';
+    clearBtn.hidden = !hidden.value;
+    controls.appendChild(clearBtn);
+
+    const statusEl = document.createElement('span');
+    statusEl.className = 'status';
+    controls.appendChild(statusEl);
+
+    function showPreview(url) {
+      preview.innerHTML = '';
+      if (url) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+        preview.appendChild(img);
+        statusEl.textContent = fmtBytes(dataUrlByteSize(url));
+        chooseBtn.textContent = 'Replace';
+        clearBtn.hidden = false;
+      } else {
+        statusEl.textContent = '';
+        chooseBtn.textContent = 'Choose image';
+        clearBtn.hidden = true;
+      }
+    }
+    showPreview(hidden.value);
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = '';
+      if (!file) return;
+      statusEl.textContent = 'Compressing…';
+      try {
+        const dataUrl = await resizeImageToDataUrl(file, IMAGE_MAX_DIM, IMAGE_QUALITY);
+        hidden.value = dataUrl;
+        showPreview(dataUrl);
+      } catch (e) {
+        console.error('Image processing failed:', e);
+        window.alert('Could not read that image.');
+        statusEl.textContent = '';
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      hidden.value = '';
+      showPreview('');
+    });
+
+    wrap.appendChild(controls);
+    return wrap;
   }
 
   function readModalValues() {
@@ -2710,18 +2935,23 @@
     parent.splice(idx, 1);
     save(); pushRemote();
   }
-  function addCard(containerPath, front, back) {
+  function addCard(containerPath, front, back, frontImage, backImage) {
     const node = resolvePath(containerPath); if (!node) return;
     if (!Array.isArray(node.cards)) node.cards = [];
-    node.cards.push({ id: newId(), front: front.trim(), back: back.trim() });
+    const card = { id: newId(), front: front.trim(), back: back.trim() };
+    if (frontImage) card.frontImage = frontImage;
+    if (backImage)  card.backImage  = backImage;
+    node.cards.push(card);
     save(); pushRemote();
   }
-  function updateCard(containerPath, cardId, front, back) {
+  function updateCard(containerPath, cardId, front, back, frontImage, backImage) {
     const node = resolvePath(containerPath); if (!node || !Array.isArray(node.cards)) return;
     const c = node.cards.find(x => x.id === cardId);
     if (!c) return;
     c.front = front.trim();
     c.back = back.trim();
+    if (frontImage) c.frontImage = frontImage; else delete c.frontImage;
+    if (backImage)  c.backImage  = backImage;  else delete c.backImage;
     save(); pushRemote();
   }
   function deleteCard(containerPath, cardId) {
@@ -3001,6 +3231,14 @@
           <button class="icon-btn danger" data-act="delete" title="Delete">×</button>
         </div>`;
       const titleEl = row.querySelector('.fc-row-title');
+      titleEl.classList.add('fc-row-with-thumb');
+      if (c.frontImage) {
+        const thumb = document.createElement('img');
+        thumb.className = 'fc-row-thumb';
+        thumb.src = c.frontImage;
+        thumb.alt = '';
+        titleEl.appendChild(thumb);
+      }
       if (c.pile === 'know' || c.pile === 'fluke' || c.pile === 'dontKnow') {
         const chip = document.createElement('span');
         chip.className = 'fc-pile-chip ' + c.pile;
@@ -3009,11 +3247,12 @@
           : c.pile === 'fluke' ? 'Marked: Fluke'
           : 'Marked: Don’t know';
         titleEl.appendChild(chip);
-        titleEl.appendChild(document.createTextNode(c.front));
-      } else {
-        titleEl.textContent = c.front;
       }
-      row.querySelector('.fc-row-meta').textContent = (c.back || '').slice(0, 80);
+      titleEl.appendChild(document.createTextNode(c.front || (c.frontImage ? '(image)' : '')));
+      const metaBits = [];
+      if (c.back) metaBits.push(c.back.slice(0, 80));
+      if (c.backImage) metaBits.push('🖼');
+      row.querySelector('.fc-row-meta').textContent = metaBits.join(' · ');
       row.style.cursor = 'default';
       row.querySelector('[data-act="edit"]').addEventListener('click', () => promptCard(containerPath, c));
       row.querySelector('[data-act="delete"]').addEventListener('click', () => {
@@ -3090,10 +3329,12 @@
           <div class="flashcard-inner">
             <div class="flashcard-face front">
               <span class="face-label">Front</span>
+              <div class="face-image"></div>
               <div class="face-text"></div>
             </div>
             <div class="flashcard-face back">
               <span class="face-label">Back</span>
+              <div class="face-image"></div>
               <div class="face-text"></div>
             </div>
           </div>
@@ -3124,8 +3365,32 @@
       positionEl.appendChild(chip);
       positionEl.appendChild(document.createTextNode(' ' + pileLabel));
     }
-    flashcardsBody.querySelector('.flashcard-face.front .face-text').textContent = card.front;
-    flashcardsBody.querySelector('.flashcard-face.back .face-text').textContent = card.back || '(blank)';
+    const frontFace = flashcardsBody.querySelector('.flashcard-face.front');
+    const backFace  = flashcardsBody.querySelector('.flashcard-face.back');
+    frontFace.querySelector('.face-text').textContent = card.front;
+    backFace.querySelector('.face-text').textContent = card.back || (card.backImage ? '' : '(blank)');
+    const frontImgWrap = frontFace.querySelector('.face-image');
+    const backImgWrap  = backFace.querySelector('.face-image');
+    frontImgWrap.innerHTML = '';
+    backImgWrap.innerHTML = '';
+    if (card.frontImage) {
+      const im = document.createElement('img');
+      im.src = card.frontImage;
+      im.alt = '';
+      frontImgWrap.appendChild(im);
+      frontFace.dataset.hasImage = 'true';
+    } else {
+      frontFace.dataset.hasImage = 'false';
+    }
+    if (card.backImage) {
+      const im = document.createElement('img');
+      im.src = card.backImage;
+      im.alt = '';
+      backImgWrap.appendChild(im);
+      backFace.dataset.hasImage = 'true';
+    } else {
+      backFace.dataset.hasImage = 'false';
+    }
 
     const containerPath = Array.isArray(nav.cards)
       ? nav.cards[nav.order[safeIdx]].containerPath
@@ -3311,12 +3576,14 @@
       title: existing ? 'Edit card' : 'New card',
       fields: [
         { name: 'front', label: 'Front', value: existing ? existing.front : '', required: true, multiline: true, placeholder: 'Question or term' },
-        { name: 'back',  label: 'Back',  value: existing ? existing.back  : '', multiline: true, placeholder: 'Answer or definition' }
+        { name: 'frontImage', label: 'Front image (optional)', value: existing ? (existing.frontImage || '') : '', type: 'image' },
+        { name: 'back',  label: 'Back',  value: existing ? existing.back  : '', multiline: true, placeholder: 'Answer or definition' },
+        { name: 'backImage',  label: 'Back image (optional)',  value: existing ? (existing.backImage || '')  : '', type: 'image' }
       ],
-      onSave: ({ front, back }) => {
-        if (!front) { window.alert('Front is required.'); return false; }
-        if (existing) updateCard(containerPath, existing.id, front, back);
-        else addCard(containerPath, front, back);
+      onSave: ({ front, back, frontImage, backImage }) => {
+        if (!front && !frontImage) { window.alert('Front needs text or an image.'); return false; }
+        if (existing) updateCard(containerPath, existing.id, front, back, frontImage, backImage);
+        else addCard(containerPath, front, back, frontImage, backImage);
         renderFlashcards();
       }
     });
